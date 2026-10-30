@@ -153,6 +153,21 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .refine-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .refine-row input { flex: 1 1 280px; min-width: 0; min-height: 52px; padding: 0 20px; border: 1px solid transparent; border-radius: 999px; background: var(--paper); font: inherit; color: var(--ink); }
 .refine-row .btn, .refine-row .loading { flex: 0 0 auto; min-height: 52px; width: auto; padding: 0 26px; font-size: 16px; }
+.angles { display: flex; flex-direction: column; gap: 16px; padding: 24px; border-radius: 28px; background: var(--sky); }
+.angles h3 { font-size: 34px; }
+.angles .tips { margin: 4px 0 0; color: #33424B; }
+.angles .chip { background: rgba(255,255,255,.75); border-color: transparent; }
+.angles .loading { align-self: flex-start; width: auto; min-height: 52px; padding: 0 26px; font-size: 16px; }
+.angle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 14px; }
+.angle-grid:empty { display: none; }
+.angle { display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; background: var(--paper); }
+.angle button.open { padding: 0; border: 0; background: none; cursor: zoom-in; }
+.angle img { width: 100%; height: 180px; object-fit: cover; }
+.angle .meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 6px 6px 14px; font-size: 14px; font-weight: 600; }
+.lightbox { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: rgba(20,18,15,.92); }
+.lightbox img { max-width: 100%; max-height: calc(100% - 80px); border-radius: 16px; object-fit: contain; }
+.lightbox-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; color: #fff; font-weight: 600; }
+.lightbox-bar .btn { min-height: 46px; }
 .versions { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
 .version { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; padding: 4px; border: 2px solid transparent; border-radius: 16px; background: var(--paper); font-size: 13px; font-weight: 600; }
 .version img { width: 112px; height: 72px; object-fit: cover; border-radius: 12px; }
@@ -390,6 +405,19 @@ footer .logo { font-size: 24px; color: var(--ink); }
     </div>
     <p class="error" id="refineError" role="alert" hidden></p>
   </div>
+  <div class="angles" id="anglesBox" hidden>
+    <div>
+      <h3 class="serif">See it from <em>another angle</em></h3>
+      <p class="tips">Gemini redraws this design from a new viewpoint. Small details can differ from view to view.</p>
+    </div>
+    <div class="chips" id="angleChips"></div>
+    <div class="loading" id="angleLoading" role="status" hidden>
+      <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
+      Drawing the new angle...
+    </div>
+    <p class="error" id="angleError" role="alert" hidden></p>
+    <div class="angle-grid" id="angleGrid"></div>
+  </div>
   <div class="notes" id="notes" hidden>
     <span class="eyebrow">Designer notes</span>
     <dl id="notesList"></dl>
@@ -404,6 +432,15 @@ footer .logo { font-size: 24px; color: var(--ink); }
   <p class="empty" id="galleryEmpty" hidden>Designs you save will appear here.</p>
   <div class="grid" id="galleryGrid"></div>
 </section>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Design view" hidden>
+  <img id="lightboxImg" alt="">
+  <div class="lightbox-bar">
+    <span id="lightboxLabel"></span>
+    <a class="btn btn-soft" id="lightboxDownload" download="makeover-angle.png">Download</a>
+    <button type="button" class="btn btn-accent" id="lightboxClose">Close</button>
+  </div>
+</div>
 
 <footer>
   <div class="wrap">
@@ -750,6 +787,8 @@ $('generate').addEventListener('click', async function () {
     state.cost = costLevel(out.notes, state.budget);
     state.versions = [{ img: state.result, notes: state.notes, cost: state.cost, label: 'Original design' }];
     state.vIndex = 0;
+    state.angles = [];
+    renderAngles();
     state.resultStyle = state.style;
     state.resultRoom = state.room;
     state.saved = false;
@@ -840,6 +879,94 @@ function renderVersions() {
     box.appendChild(b);
   });
 }
+
+// Other angles: redraw the finished design from a new viewpoint, using the current result as the scene reference
+var ANGLES = [
+  { id: 'door', name: 'From the doorway', view: 'from the main doorway looking into the room, camera at eye level about 150 cm high, wide-angle 24 mm lens' },
+  { id: 'opposite', name: 'Opposite corner', view: 'from the opposite corner of the room, looking back toward where the original camera stood, eye level, wide-angle 24 mm lens' },
+  { id: 'side', name: 'Side view', view: 'from the side of the room, at a right angle to the original view, eye level, 28 mm lens' },
+  { id: 'detail', name: 'Close-up detail', view: 'a close-up vignette of the main furniture grouping and the statement piece, 50 mm lens, soft background blur' },
+  { id: 'top', name: 'Bird\'s-eye', view: 'from high up near the ceiling corner, a three-quarter top-down view that shows the whole furniture layout' }
+];
+ANGLES.forEach(function (a) {
+  $('angleChips').appendChild(makeChip(a.name, false, function () { makeAngle(a); }));
+});
+
+function buildAnglePrompt(a) {
+  var s = styleById(state.resultStyle);
+  return [
+    'Use this image as the exact scene reference. It shows a finished interior design of a ' + roomById(state.resultRoom).name.toLowerCase() + '.',
+    'Keep every piece of furniture, all materials, colors, finishes, textiles, decor, light fixtures, lighting direction and time of day identical, and keep the architecture consistent (walls, windows, doors, ceiling height, floor).',
+    'Show the same room from a new viewpoint: ' + a.view + '.',
+    'Parts of the room that were not visible before must continue the same ' + s.name + ' design logically, with the same materials and palette.',
+    'Photorealistic editorial interior photograph, true-to-life materials and textures, vertical lines kept straight, landscape format.',
+    'No people, no text inside the image, no watermarks.'
+  ].join('\n');
+}
+
+function showAngleError(msg) { $('angleError').textContent = msg; $('angleError').hidden = !msg; }
+
+async function makeAngle(a) {
+  if (!getKey()) { showAngleError('Add your Gemini API key in the studio first.'); return; }
+  showAngleError('');
+  $('angleChips').hidden = true;
+  $('angleLoading').hidden = false;
+  try {
+    var current = await resizeImage(state.result, 2048, 0.92);
+    var out = await callGemini(current, buildAnglePrompt(a));
+    state.angles = [{ img: out.img, name: a.name }].concat(state.angles || []);
+    renderAngles();
+  } catch (e) {
+    showAngleError(e.message === 'Failed to fetch' ? 'Could not reach Gemini. Check your internet connection.' : e.message);
+  } finally {
+    $('angleChips').hidden = false;
+    $('angleLoading').hidden = true;
+  }
+}
+
+function renderAngles() {
+  var grid = $('angleGrid');
+  grid.innerHTML = '';
+  (state.angles || []).forEach(function (v) {
+    var card = document.createElement('div');
+    card.className = 'angle';
+    var open = document.createElement('button');
+    open.type = 'button';
+    open.className = 'open';
+    open.setAttribute('aria-label', 'Open ' + v.name + ' full screen');
+    var img = document.createElement('img');
+    img.src = v.img;
+    img.alt = v.name;
+    open.appendChild(img);
+    open.addEventListener('click', function () { openLightbox(v.img, v.name); });
+    var meta = document.createElement('div');
+    meta.className = 'meta';
+    var label = document.createElement('span');
+    label.textContent = v.name;
+    var dl = document.createElement('a');
+    dl.className = 'icon-btn';
+    dl.href = v.img;
+    dl.download = 'makeover-' + v.name.toLowerCase().replace(/[^a-z]+/g, '-') + '.png';
+    dl.setAttribute('aria-label', 'Download ' + v.name);
+    dl.innerHTML = DOWN;
+    meta.append(label, dl);
+    card.append(open, meta);
+    grid.appendChild(card);
+  });
+}
+
+function openLightbox(src, name) {
+  $('lightboxImg').src = src;
+  $('lightboxImg').alt = name;
+  $('lightboxLabel').textContent = name;
+  $('lightboxDownload').href = src;
+  $('lightbox').hidden = false;
+  $('lightboxClose').focus();
+}
+function closeLightbox() { $('lightbox').hidden = true; }
+$('lightboxClose').addEventListener('click', closeLightbox);
+$('lightbox').addEventListener('click', function (e) { if (e.target === $('lightbox')) closeLightbox(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('lightbox').hidden) closeLightbox(); });
 
 // Compare slider: before on the left, after on the right
 function setSlider(v) {
@@ -1070,6 +1197,7 @@ function refresh() {
   $('compare').hidden = !has;
   $('resultActions').hidden = !has;
   $('refineBox').hidden = !has;
+  $('anglesBox').hidden = !has;
   renderVersions();
   if (has) {
     $('afterLabel').textContent = styleById(state.resultStyle).name;
