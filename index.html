@@ -323,7 +323,8 @@ footer .logo { font-size: 24px; color: var(--ink); }
           <details id="keyBox">
             <summary>Gemini API key <span id="keyState" class="tips">(needed once)</span></summary>
             <div class="keyrow">
-              <input type="text" id="apiKey" name="gemini-key-field" class="masked" placeholder="Paste your key (starts with AIza)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore aria-label="Gemini API key">
+              <input type="text" id="apiKey" name="gemini-key-field" class="masked" placeholder="Paste your Gemini API key" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore aria-label="Gemini API key">
+              <button type="button" class="btn btn-soft" id="showKey" style="min-height:46px;padding:0 18px;font-size:14px" aria-pressed="false">Show</button>
               <button type="button" class="btn btn-soft" id="clearKey" style="min-height:46px;padding:0 18px;font-size:14px">Clear</button>
               <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a key</a>
             </div>
@@ -531,6 +532,11 @@ $('clearKey').addEventListener('click', function () {
   showError('');
   refresh();
   $('apiKey').focus();
+});
+$('showKey').addEventListener('click', function () {
+  var show = $('apiKey').classList.toggle('masked') === false;
+  $('showKey').textContent = show ? 'Hide' : 'Show';
+  $('showKey').setAttribute('aria-pressed', String(show));
 });
 function openKeyField() {
   $('keyBox').open = true;
@@ -849,11 +855,12 @@ function refresh() {
   if (state.photo) $('previewImg').src = state.photo;
 
   var hasKey = !!getKey();
-  var keyLooksWrong = hasKey && !/^AIza[\w-]{30,}$/.test(getKey());
+  // Gemini keys are one unbroken string; spaces or a very short value mean something else was pasted
+  var keyLooksWrong = hasKey && (/\s/.test(getKey()) || getKey().length < 30);
   if (keyLooksWrong) $('keyBox').open = true;
   var ready = !!state.photo && !!state.style && hasKey;
   $('generate').disabled = !ready;
-  $('keyState').textContent = !hasKey ? '(needed once)' : keyLooksWrong ? '(this does not look like a Gemini key: it should start with AIza)' : keyStored ? '(saved)' : '(this visit only: open the file in Chrome or Edge to keep it)';
+  $('keyState').textContent = !hasKey ? '(needed once)' : keyLooksWrong ? '(this does not look like an API key: click Show to check it)' : keyStored ? '(saved)' : '(this visit only: open the file in Chrome or Edge to keep it)';
   $('hint').textContent = !state.photo ? 'Upload a photo to start'
     : !state.style ? 'Now pick a style'
     : !hasKey ? 'Add your Gemini API key below'
