@@ -115,8 +115,8 @@ nav .btn { min-height: 44px; padding: 0 20px; font-size: 15px; }
 .style span { padding: 8px 12px 10px; font-size: 14px; font-weight: 600; }
 .style[aria-pressed="true"] { border-color: var(--accent); }
 .style[aria-pressed="true"]::after { content: ''; position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 999px; background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/14px no-repeat; }
-.seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 999px; background: var(--ground); border: 1px solid var(--line); }
-.seg button { min-height: 44px; border: 0; border-radius: 999px; background: transparent; font-size: 15px; font-weight: 600; color: var(--muted); }
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 999px; background: var(--ground); border: 1px solid var(--line); }
+.seg button { min-height: 44px; padding: 4px 8px; border: 0; border-radius: 999px; background: transparent; font-size: 14px; font-weight: 600; line-height: 1.2; color: var(--muted); }
 .seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 2px 8px rgba(36,33,29,.1); }
 textarea { width: 100%; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--ink); font: inherit; resize: vertical; }
 textarea::placeholder, input::placeholder { color: #8A847A; }
@@ -145,6 +145,10 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .knob { position: absolute; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 999px; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(36,33,29,.2); pointer-events: none; }
 .compare input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.notes { display: flex; flex-direction: column; gap: 14px; padding: 24px; border-radius: 28px; background: var(--paper); border: 1px solid var(--line); }
+.notes dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 16px 24px; }
+.notes dt { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--accent); }
+.notes dd { margin: 4px 0 0; color: var(--muted); }
 
 /* Gallery */
 .gallery-sec { padding-top: 40px; padding-bottom: 88px; display: flex; flex-direction: column; gap: 24px; }
@@ -267,6 +271,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
           <div class="seg" id="intensity">
             <button type="button" data-v="light" aria-pressed="false">Light refresh</button>
             <button type="button" data-v="full" aria-pressed="true">Full makeover</button>
+            <button type="button" data-v="bold" aria-pressed="false">Bold &amp; creative</button>
           </div>
         </fieldset>
 
@@ -319,6 +324,10 @@ footer .logo { font-size: 24px; color: var(--ink); }
     <div class="knob" id="knob"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#24211D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></div>
     <input type="range" id="slider" min="1" max="99" value="50" aria-label="Compare before and after">
   </div>
+  <div class="notes" id="notes" hidden>
+    <span class="eyebrow">Designer notes</span>
+    <dl id="notesList"></dl>
+  </div>
 </section>
 
 <section id="gallery" class="wrap gallery-sec">
@@ -343,27 +352,63 @@ var ROOMS = [
   { id: 'living', name: 'Living room' }, { id: 'bedroom', name: 'Bedroom' }, { id: 'majlis', name: 'Majlis' },
   { id: 'dining', name: 'Dining room' }, { id: 'kitchen', name: 'Kitchen' }, { id: 'office', name: 'Home office' }
 ];
+// Each style is written as a designer's brief: concept, palette, materials, signature pieces, lighting layers, styling
 var STYLES = [
   { id: 'modern', name: 'Modern', img: '1586023492125-27b2c045efd7',
-    desc: 'clean straight lines, matte lacquer and smooth plaster walls, warm white and soft grey palette with black metal accents, low-profile sofa and sleek furniture, minimal curated decor, recessed warm LED lighting with one sculptural floor lamp' },
+    concept: 'quiet gallery-like modern living with crisp architecture and one sculptural moment',
+    palette: 'warm white, greige and soft stone grey, grounded by matte black, with one saturated accent such as ochre or deep olive',
+    materials: 'smooth microcement or plaster walls, wide-plank light oak floor, matte lacquer joinery, brushed steel, boucle and fine wool',
+    pieces: 'a low modular sofa, a sculptural lounge chair, a stone or travertine coffee table, slim floating media unit, oversized abstract artwork',
+    lighting: 'recessed warm-white ambient light, a concealed LED cove or shelf strip, and a sculptural floor or pendant lamp as accent',
+    styling: 'minimal curated objects in odd numbers, one large plant, generous negative space' },
   { id: 'scandi', name: 'Scandinavian', img: '1616486338812-3dadae4b4ace',
-    desc: 'light oak and ash wood, white walls, soft grey and oatmeal textiles, wool throws and a cosy rug, simple functional furniture with tapered legs, a few green plants, bright natural daylight and paper pendant lights' },
+    concept: 'bright, cosy hygge home that feels calm, functional and full of daylight',
+    palette: 'soft white and oatmeal, pale grey, light wood, with dusty blue or sage accents',
+    materials: 'white oak and ash, wool, linen, sheepskin, matte ceramic, paper and light textured plaster',
+    pieces: 'a light linen sofa with tapered legs, a spindle or shell chair, a round wooden coffee table, open wall shelving, a chunky knit throw',
+    lighting: 'maximised daylight with sheer curtains, a paper or opal glass pendant, and warm table lamps for evening glow',
+    styling: 'a few green plants, simple ceramics, books, a soft flatweave rug' },
   { id: 'japandi', name: 'Japandi', img: '1618221195710-dd6b41faaea6',
-    desc: 'warm natural wood, linen, rattan and limewash walls, muted earthy palette of sand, clay and charcoal, low grounded furniture, calm uncluttered surfaces, ceramics and a single branch arrangement, soft diffused warm lighting' },
+    concept: 'serene wabi-sabi retreat balancing Japanese restraint and Scandinavian warmth',
+    palette: 'sand, clay, warm beige and rice-paper white, anchored by charcoal and dark-stained wood',
+    materials: 'limewash or clay plaster walls, natural oak and dark ash, linen, rattan, handmade stoneware, washi paper',
+    pieces: 'a low grounded sofa, a solid wood bench or low table, slatted wood screen or fluted panel, a floor cushion, a sculptural branch in a ceramic vessel',
+    lighting: 'soft diffused ambient light, a rice-paper pendant or floor lantern, and warm indirect light grazing the textured wall',
+    styling: 'very few objects, natural imperfection, a single ikebana-like branch, uncluttered surfaces' },
   { id: 'industrial', name: 'Industrial', img: '1600210492486-724fe5c67fb0',
-    desc: 'exposed brick or concrete feature wall, black steel frames, cognac leather seating, reclaimed wood tables, open shelving, Edison bulb pendants and warm amber lighting' },
+    concept: 'refined loft with raw materials softened by warm leather and wood',
+    palette: 'charcoal, concrete grey, rust and cognac brown, with warm brass highlights',
+    materials: 'exposed brick or board-formed concrete, black steel, reclaimed timber, aged leather, ribbed glass',
+    pieces: 'a cognac leather sofa, a reclaimed wood and steel coffee table, steel-framed shelving, a vintage factory stool, a large metal-framed mirror',
+    lighting: 'track spotlights, exposed filament pendants in warm amber, and a metal task floor lamp',
+    styling: 'vintage objects, books, a large architectural plant, a worn Persian-style rug' },
   { id: 'classic', name: 'Classic', img: '1598928506311-c55ded91a20c',
-    desc: 'elegant wall panel mouldings, symmetric layout, rich walnut wood, cream and taupe upholstery, brass and crystal details, tufted armchairs, framed art, layered warm lighting with a chandelier and table lamps' },
+    concept: 'timeless elegance with symmetry, fine craftsmanship and a modern lightness',
+    palette: 'ivory, cream and warm taupe, with deep navy or emerald velvet and antique brass',
+    materials: 'wall panel mouldings, herringbone wood floor, marble, walnut, velvet, silk and antique brass',
+    pieces: 'a rolled-arm sofa, a pair of matching armchairs, a marble-top coffee table, a carved console, gilded mirror and framed artwork',
+    lighting: 'a statement crystal or brass chandelier, wall sconces in symmetric pairs, and pleated table lamps',
+    styling: 'symmetric arrangements, fresh flowers, books stacked under decorative objects, heavy lined curtains' },
   { id: 'boho', name: 'Boho', img: '1615874959474-d609969a20ed',
-    desc: 'layered patterned rugs and textiles, rattan and cane furniture, macrame and woven wall decor, many green plants, terracotta, mustard and cream palette, floor cushions, warm string and woven pendant lighting' },
+    concept: 'free-spirited, sun-warmed home layered with craft, travel finds and greenery',
+    palette: 'terracotta, mustard, rust and cream, with olive green from plants',
+    materials: 'rattan, cane, jute, macrame, hand-woven textiles, terracotta, reclaimed wood',
+    pieces: 'a low sofa piled with patterned cushions, a rattan peacock or egg chair, a carved wood side table, layered vintage rugs, poufs and floor cushions',
+    lighting: 'woven rattan pendants, warm string lights and candle-like lamps for a golden glow',
+    styling: 'many trailing and potted plants, woven wall hangings, baskets, collected ceramics' },
   { id: 'arabic', name: 'Contemporary Arabic', img: '1631679706909-1844bbd07221',
-    desc: 'modern Middle Eastern design with soft arches, geometric mashrabiya screens, warm sand and ivory walls, deep teal and brass accents, low wide seating with cushions, patterned rug, carved wood details, warm lantern-style lighting' }
+    concept: 'contemporary Middle Eastern hospitality, calm and generous, with heritage geometry',
+    palette: 'warm sand, ivory and date brown, with deep teal or indigo and burnished brass',
+    materials: 'smooth plaster with soft arches, carved or CNC-cut wood, geometric mashrabiya screens, natural stone, brass, rich wool',
+    pieces: 'low wide majlis-style seating with bolsters, a brass or carved wood tray table, a geometric patterned rug, arched niches with decor',
+    lighting: 'warm pierced-metal lanterns casting patterned shadows, hidden cove lighting in arches, and soft wall washers',
+    styling: 'incense burner and coffee set, calligraphy-inspired art, ceramics in niches, a large potted palm' }
 ];
 var KEEP_ITEMS = ['Sofa', 'Rug', 'Bed', 'Dining table', 'Curtains', 'Plants', 'Artwork', 'Lighting'];
 var KEY = 'makeover-gallery';
 var KEY_STORE = 'makeover-gemini-key';
 var MODEL = 'gemini-2.5-flash-image';
-var state = { photo: '', room: 'living', style: '', intensity: 'full', keep: [], result: '', resultStyle: '', saved: false };
+var state = { photo: '', room: 'living', style: '', intensity: 'full', keep: [], result: '', notes: [], resultStyle: '', saved: false };
 var $ = function (id) { return document.getElementById(id); };
 var styleById = function (id) { return STYLES.find(function (s) { return s.id === id; }); };
 var roomById = function (id) { return ROOMS.find(function (r) { return r.id === id; }); };
@@ -458,19 +503,28 @@ function buildPrompt() {
   var extra = $('keep').value.trim();
   if (extra) keep.push(extra);
   var lines = [
-    'Edit this photo of a ' + room + '.',
-    'Keep the architecture exactly as shown: walls, ceiling, floor plan, windows, doors, openings and room proportions. Keep the same camera position, lens, angle, perspective and framing.'
+    'You are a senior interior designer creating a magazine-quality redesign of the ' + room + ' in this photo.',
+    'KEEP: the architecture exactly as shown (walls, ceiling, floor plan, windows, doors, openings, room proportions) and the same camera position, lens, angle, perspective and framing.'
   ];
-  if (keep.length) lines.push('Keep these items exactly as they are, in the same position, size, shape, material and color: ' + keep.join(', ') + '.');
+  if (keep.length) lines.push('KEEP these items exactly as they are, in the same position, size, shape, material and color: ' + keep.join(', ') + '. Design the new room around them; if a kept item overlaps with the pieces listed below, keep the existing one.');
+  lines.push('DESIGN CONCEPT: ' + s.name + ', ' + s.concept + '.');
   if (state.intensity === 'light') {
-    lines.push('Make a light refresh in ' + s.name + ' style: keep the current furniture layout and main pieces, and update wall color, textiles, cushions, rug, lighting fixtures, plants and decor to match the style.');
+    lines.push('CHANGE: a light refresh. Keep the current furniture layout and main pieces; restyle wall color, textiles, cushions, rug, curtains, lighting fixtures, plants and accessories.');
   } else {
-    lines.push('Make a full makeover as a ' + s.name + ' ' + room + ': replace the furniture, wall finishes, floor finish, textiles, lighting fixtures and decor, arranged in a functional, well-proportioned layout for a ' + room + '.');
+    lines.push('CHANGE: a full makeover. Replace furniture, wall finishes, floor finish, textiles, lighting and decor, in a functional layout for a ' + room + ' with furniture scaled to the room and clear walkways.');
   }
-  lines.push(s.name + ' style details: ' + s.desc + '.');
-  lines.push('Keep the daylight coming from the existing windows in the same direction, with realistic soft shadows and balanced warm interior lighting.');
-  lines.push('Photorealistic professional interior photograph, true-to-life materials and textures, same aspect ratio as the input photo.');
-  lines.push('No people, no text, no watermarks, no extra or moved windows and doors.');
+  if (state.intensity === 'bold') {
+    lines.push('Be bold and creative while staying true to the style: add one signature statement piece, a feature wall treatment such as fluted panels, limewash, panelling or an arch niche, one unexpected accent color, and sculptural lighting.');
+  }
+  lines.push('- Palette: ' + s.palette + '.');
+  lines.push('- Materials and finishes: ' + s.materials + '.');
+  lines.push('- Key pieces: ' + s.pieces + '.');
+  lines.push('- Lighting in layers: ' + s.lighting + '. Daylight keeps coming from the existing windows in the same direction, with realistic soft shadows.');
+  lines.push('- Styling: ' + s.styling + '.');
+  lines.push('Compose one clear focal point, a balanced rhythm of heights, and a mix of textures (matte, soft, natural, a touch of metal) so the room feels layered and lived-in, not staged.');
+  lines.push('OUTPUT: one photorealistic interior photograph in editorial architectural photography quality, true-to-life textures, same aspect ratio as the input photo.');
+  lines.push('Also reply with a short designer note in exactly this format:\nConcept: <one line>\nPalette: <3 to 5 colors>\nMaterials: <key materials>\nStatement piece: <one item>\nLighting: <one line>');
+  lines.push('No people, no text inside the image, no watermarks, no extra or moved windows and doors.');
   return lines.join('\n');
 }
 
@@ -510,7 +564,17 @@ async function callModel(model, photo, prompt) {
   var part = parts.find(function (p) { return p.inlineData || p.inline_data; });
   if (!part) throw new Error('Gemini did not return an image. Try again, or try another style.');
   var d = part.inlineData || part.inline_data;
-  return 'data:' + (d.mimeType || d.mime_type || 'image/png') + ';base64,' + d.data;
+  var text = parts.map(function (p) { return p.text || ''; }).join('\n');
+  return { img: 'data:' + (d.mimeType || d.mime_type || 'image/png') + ';base64,' + d.data, notes: parseNotes(text) };
+}
+
+// Pull "Label: value" lines from the designer note Gemini writes next to the image
+function parseNotes(text) {
+  var want = ['Concept', 'Palette', 'Materials', 'Statement piece', 'Lighting'];
+  return want.map(function (label) {
+    var m = text.match(new RegExp('^\\W*' + label + '\\W*:\\s*(.+)$', 'im'));
+    return m ? { label: label, value: m[1].replace(/\*+/g, '').trim() } : null;
+  }).filter(Boolean);
 }
 
 function showError(msg) { $('error').textContent = msg; $('error').hidden = !msg; }
@@ -521,7 +585,9 @@ $('generate').addEventListener('click', async function () {
   $('loading').hidden = false;
   try {
     var photo = await resizeImage(state.photo, 1536, 0.9);
-    state.result = await callGemini(photo, buildPrompt());
+    var out = await callGemini(photo, buildPrompt());
+    state.result = out.img;
+    state.notes = out.notes;
     state.resultStyle = state.style;
     state.resultRoom = state.room;
     state.saved = false;
@@ -636,6 +702,18 @@ function refresh() {
     $('download').href = state.result;
     setSlider(Number($('slider').value));
   }
+  var notes = has && state.notes ? state.notes : [];
+  $('notes').hidden = !notes.length;
+  $('notesList').innerHTML = '';
+  notes.forEach(function (n) {
+    var wrap = document.createElement('div');
+    var dt = document.createElement('dt');
+    var dd = document.createElement('dd');
+    dt.textContent = n.label;
+    dd.textContent = n.value;
+    wrap.append(dt, dd);
+    $('notesList').appendChild(wrap);
+  });
   $('save').textContent = state.saved ? 'Saved' : 'Save to my designs';
   renderGallery();
 }
