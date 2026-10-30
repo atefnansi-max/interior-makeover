@@ -116,6 +116,7 @@ nav .btn { min-height: 44px; padding: 0 20px; font-size: 15px; }
 .style[aria-pressed="true"] { border-color: var(--accent); }
 .style[aria-pressed="true"]::after { content: ''; position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 999px; background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/14px no-repeat; }
 .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 999px; background: var(--ground); border: 1px solid var(--line); }
+.seg.seg-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .seg button { min-height: 44px; padding: 4px 8px; border: 0; border-radius: 999px; background: transparent; font-size: 14px; font-weight: 600; line-height: 1.2; color: var(--muted); }
 .seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 2px 8px rgba(36,33,29,.1); }
 textarea { width: 100%; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--ink); font: inherit; resize: vertical; }
@@ -343,6 +344,10 @@ footer .logo { font-size: 24px; color: var(--ink); }
         </fieldset>
 
         <div class="go">
+          <div class="seg seg-2" id="quality" role="group" aria-label="Image quality">
+            <button type="button" data-v="fast" aria-pressed="true">Fast · about 20–40 s</button>
+            <button type="button" data-v="hd" aria-pressed="false">HD 2K · about 1–2 min</button>
+          </div>
           <button type="button" class="btn btn-accent" id="generate" disabled>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
             Generate my design</button>
@@ -529,7 +534,7 @@ var KEEP_ITEMS = ['Sofa', 'Rug', 'Bed', 'Dining table', 'Curtains', 'Plants', 'A
 var KEY = 'makeover-gallery';
 var KEY_STORE = 'makeover-gemini-key';
 var MODEL = 'gemini-2.5-flash-image';
-var state = { photo: '', room: 'living', style: '', intensity: 'full', budget: 'mid', mood: 'day', keep: [], result: '', notes: [], versions: [], vIndex: 0, resultStyle: '', saved: false };
+var state = { photo: '', room: 'living', style: '', intensity: 'full', budget: 'mid', mood: 'day', quality: 'fast', keep: [], result: '', notes: [], versions: [], vIndex: 0, resultStyle: '', saved: false };
 var $ = function (id) { return document.getElementById(id); };
 var styleById = function (id) { return STYLES.find(function (s) { return s.id === id; }); };
 var roomById = function (id) { return ROOMS.find(function (r) { return r.id === id; }); };
@@ -577,6 +582,9 @@ document.querySelectorAll('#budget button').forEach(function (b) {
 });
 document.querySelectorAll('#mood button').forEach(function (b) {
   b.addEventListener('click', function () { state.mood = b.dataset.v; refresh(); });
+});
+document.querySelectorAll('#quality button').forEach(function (b) {
+  b.addEventListener('click', function () { state.quality = b.dataset.v; refresh(); });
 });
 
 // Upload
@@ -706,7 +714,8 @@ async function callWithRetry(model, photo, prompt, size) {
   try {
     return await callModel(model, photo, prompt, size);
   } catch (e) {
-    if (e.timeout) return await callModel(model, photo, prompt, size);
+    // Retry a quick server timeout once; after our own time limit, move on to the faster model instead
+    if (e.timeout && !e.cutOff) return await callModel(model, photo, prompt, size);
     if (!e.noImage) throw e;
     return await callModel(model, photo, prompt + '\nIMPORTANT: you must return the edited image, not only text.', size);
   }
@@ -728,17 +737,33 @@ async function callGemini(photo, prompt, size) {
 async function callModel(model, photo, prompt, size) {
   var config = { responseModalities: ['TEXT', 'IMAGE'] };
   if (size) config.imageConfig = { imageSize: size };
-  var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': getKey() },
-    body: JSON.stringify({
-      contents: [{ parts: [
-        { inline_data: { mime_type: 'image/jpeg', data: photo.split(',')[1] } },
-        { text: prompt }
-      ] }],
-      generationConfig: config
-    })
-  });
+  // Give up on a slow answer so the caller can switch to the faster model instead of waiting minutes
+  var limitMs = size === '2K' ? 150000 : 60000;
+  var ctrl = new AbortController();
+  var timer = setTimeout(function () { ctrl.abort(); }, limitMs);
+  var res;
+  try {
+    res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
+      signal: ctrl.signal,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': getKey() },
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { inline_data: { mime_type: 'image/jpeg', data: photo.split(',')[1] } },
+          { text: prompt }
+        ] }],
+        generationConfig: config
+      })
+    });
+  } catch (e) {
+    if (e.name !== 'AbortError') throw e;
+    var cut = new Error('Gemini took too long to answer this time. Please press the button again in a moment.');
+    cut.timeout = true;
+    cut.cutOff = true;
+    throw cut;
+  } finally {
+    clearTimeout(timer);
+  }
   var json = await res.json().catch(function () { return {}; });
   var msg = (json.error && json.error.message) || '';
   if (res.status === 504 || res.status === 503 || /deadline|timed? ?out|overloaded|unavailable/i.test(msg)) {
@@ -787,8 +812,9 @@ $('generate').addEventListener('click', async function () {
   $('generate').hidden = true;
   $('loading').hidden = false;
   try {
-    var photo = await resizeImage(state.photo, 2048, 0.92);
-    var out = await callGemini(photo, buildPrompt());
+    var hd = state.quality === 'hd';
+    var photo = await resizeImage(state.photo, hd ? 2048 : 1536, 0.9);
+    var out = await callGemini(photo, buildPrompt(), hd ? '2K' : '1K');
     state.result = out.img;
     state.notes = out.notes;
     state.cost = costLevel(out.notes, state.budget);
@@ -838,8 +864,9 @@ async function applyRefine() {
   $('refineBtn').hidden = true;
   $('refineLoading').hidden = false;
   try {
-    var current = await resizeImage(state.result, 2048, 0.92);
-    var out = await callGemini(current, buildRefinePrompt(change));
+    var hd = state.quality === 'hd';
+    var current = await resizeImage(state.result, hd ? 2048 : 1536, 0.9);
+    var out = await callGemini(current, buildRefinePrompt(change), hd ? '2K' : '1K');
     var notes = state.notes.filter(function (n) { return n.label !== 'Cost level'; })
       .concat(out.notes.filter(function (n) { return n.label === 'Cost level'; }));
     var v = { img: out.img, notes: notes, cost: costLevel(out.notes, state.budget), label: change.length > 28 ? change.slice(0, 26) + '…' : change };
@@ -1183,6 +1210,7 @@ function refresh() {
   pressAll('#intensity button', function (b) { return b.dataset.v === state.intensity; });
   pressAll('#budget button', function (b) { return b.dataset.v === state.budget; });
   pressAll('#mood button', function (b) { return b.dataset.v === state.mood; });
+  pressAll('#quality button', function (b) { return b.dataset.v === state.quality; });
 
   $('dropArea').hidden = !!state.photo;
   $('previewArea').hidden = !state.photo;
@@ -1198,7 +1226,7 @@ function refresh() {
   $('hint').textContent = !state.photo ? 'Upload a photo to start'
     : !state.style ? 'Now pick a style'
     : !hasKey ? 'Add your Gemini API key below'
-    : 'Takes about 20 seconds';
+    : state.quality === 'hd' ? 'HD takes about 1 to 2 minutes' : 'Takes about 20 to 40 seconds';
 
   var has = !!state.result;
   $('noResult').hidden = has;
