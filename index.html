@@ -706,6 +706,7 @@ async function callWithRetry(model, photo, prompt, size) {
   try {
     return await callModel(model, photo, prompt, size);
   } catch (e) {
+    if (e.timeout) return await callModel(model, photo, prompt, size);
     if (!e.noImage) throw e;
     return await callModel(model, photo, prompt + '\nIMPORTANT: you must return the edited image, not only text.', size);
   }
@@ -716,8 +717,9 @@ async function callGemini(photo, prompt, size) {
     try {
       return await callWithRetry(HQ_MODEL, photo, prompt, size || HQ_SIZE);
     } catch (e) {
-      if (!e.modelUnavailable && !e.noQuota) throw e;
-      hqAvailable = false;
+      // A timeout only skips the newer model this once; a missing model or quota skips it for the visit
+      if (!e.modelUnavailable && !e.noQuota && !e.timeout) throw e;
+      if (!e.timeout) hqAvailable = false;
     }
   }
   return await callWithRetry(MODEL, photo, prompt);
@@ -739,6 +741,11 @@ async function callModel(model, photo, prompt, size) {
   });
   var json = await res.json().catch(function () { return {}; });
   var msg = (json.error && json.error.message) || '';
+  if (res.status === 504 || res.status === 503 || /deadline|timed? ?out|overloaded|unavailable/i.test(msg)) {
+    var slow = new Error('Gemini took too long to answer this time. Please press the button again in a moment.');
+    slow.timeout = true;
+    throw slow;
+  }
   if (!res.ok && (res.status === 404 || (res.status === 400 && !/API key/i.test(msg) && /model|image_?size|imageConfig|not supported|unknown name|invalid json/i.test(msg)))) {
     var na = new Error(msg || 'This model is not available.');
     na.modelUnavailable = true;
