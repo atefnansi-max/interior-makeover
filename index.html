@@ -653,24 +653,36 @@ function buildPrompt() {
   return lines.join('\n');
 }
 
-// Try the main image model first; if the key has no quota for it, try the older one that some free keys still allow
-var FALLBACK_MODEL = 'gemini-2.0-flash-preview-image-generation';
-async function callGemini(photo, prompt) {
+// Prefer the newer model at 2K; if this key or region can't use it, fall back to the 1K model for the rest of the visit
+var HQ_MODEL = 'gemini-3.1-flash-image';
+var HQ_SIZE = '2K';
+var hqAvailable = true;
+
+// Gemini sometimes answers with text only; ask once more, insisting on the image
+async function callWithRetry(model, photo, prompt, size) {
   try {
-    try {
-      return await callModel(MODEL, photo, prompt);
-    } catch (first) {
-      // Gemini sometimes answers with text only; ask once more, insisting on the image
-      if (!first.noImage) throw first;
-      return await callModel(MODEL, photo, prompt + '\nIMPORTANT: you must return the edited image, not only text.');
-    }
+    return await callModel(model, photo, prompt, size);
   } catch (e) {
-    if (!e.noQuota) throw e;
-    try { return await callModel(FALLBACK_MODEL, photo, prompt); } catch (e2) { throw e; }
+    if (!e.noImage) throw e;
+    return await callModel(model, photo, prompt + '\nIMPORTANT: you must return the edited image, not only text.', size);
   }
 }
 
-async function callModel(model, photo, prompt) {
+async function callGemini(photo, prompt) {
+  if (hqAvailable) {
+    try {
+      return await callWithRetry(HQ_MODEL, photo, prompt, HQ_SIZE);
+    } catch (e) {
+      if (!e.modelUnavailable && !e.noQuota) throw e;
+      hqAvailable = false;
+    }
+  }
+  return await callWithRetry(MODEL, photo, prompt);
+}
+
+async function callModel(model, photo, prompt, size) {
+  var config = { responseModalities: ['TEXT', 'IMAGE'] };
+  if (size) config.imageConfig = { imageSize: size };
   var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': getKey() },
@@ -679,11 +691,16 @@ async function callModel(model, photo, prompt) {
         { inline_data: { mime_type: 'image/jpeg', data: photo.split(',')[1] } },
         { text: prompt }
       ] }],
-      generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+      generationConfig: config
     })
   });
   var json = await res.json().catch(function () { return {}; });
   var msg = (json.error && json.error.message) || '';
+  if (!res.ok && (res.status === 404 || (res.status === 400 && !/API key/i.test(msg) && /model|image_?size|imageConfig|not supported|unknown name|invalid json/i.test(msg)))) {
+    var na = new Error(msg || 'This model is not available.');
+    na.modelUnavailable = true;
+    throw na;
+  }
   if (/limit: 0/.test(msg)) {
     var err = new Error('Image generation is not included in the free Gemini tier. In Google AI Studio, open API Keys and click "Set up billing" next to your key, then try again.');
     err.noQuota = true;
@@ -720,7 +737,7 @@ $('generate').addEventListener('click', async function () {
   $('generate').hidden = true;
   $('loading').hidden = false;
   try {
-    var photo = await resizeImage(state.photo, 1536, 0.9);
+    var photo = await resizeImage(state.photo, 2048, 0.92);
     var out = await callGemini(photo, buildPrompt());
     state.result = out.img;
     state.notes = out.notes;
@@ -769,7 +786,7 @@ async function applyRefine() {
   $('refineBtn').hidden = true;
   $('refineLoading').hidden = false;
   try {
-    var current = await resizeImage(state.result, 1536, 0.9);
+    var current = await resizeImage(state.result, 2048, 0.92);
     var out = await callGemini(current, buildRefinePrompt(change));
     var notes = state.notes.filter(function (n) { return n.label !== 'Cost level'; })
       .concat(out.notes.filter(function (n) { return n.label === 'Cost level'; }));
