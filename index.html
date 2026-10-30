@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Makeover · AI Interior Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root {
+  --ground: #FBF8F3;
+  --paper: #FFFFFF;
+  --ink: #24211D;
+  --muted: #5F5A52;
+  --line: #E7E0D5;
+  --sage: #DCE5D3;
+  --blush: #F6DCD2;
+  --butter: #F7E9C2;
+  --sky: #D9E6EE;
+  --accent: #B5532C;
+  --accent-dark: #97431F;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --img: url();
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--ground); color: var(--ink); font-family: 'DM Sans', system-ui, sans-serif; font-size: 16px; line-height: 1.6; overflow-x: hidden; }
+img { display: block; max-width: 100%; }
+a { color: var(--ink); }
+button { font: inherit; cursor: pointer; color: inherit; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
+.serif { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; line-height: 1.02; margin: 0; }
+.serif em { font-style: italic; color: var(--accent); }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 26px; border-radius: 999px; border: 1px solid transparent; font-weight: 600; font-size: 16px; text-decoration: none; transition: background .15s, border-color .15s; }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: var(--accent-dark); color: #fff; }
+.btn-accent:disabled { background: #CFC6BA; color: #5F5A52; cursor: not-allowed; }
+.btn-line { background: transparent; border-color: var(--ink); color: var(--ink); }
+.btn-line:hover { background: var(--paper); }
+.btn-soft { background: var(--paper); border-color: var(--line); color: var(--ink); }
+.btn-soft:hover { border-color: #CFC6BA; }
+
+/* Header */
+header { position: sticky; top: 0; z-index: 10; background: rgba(251,248,243,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; }
+.logo { font-family: var(--serif); font-size: 30px; text-decoration: none; }
+.logo em { color: var(--accent); }
+nav { display: flex; align-items: center; gap: 28px; }
+nav a.nl { display: none; font-size: 15px; font-weight: 500; text-decoration: none; padding: 12px 0; }
+nav .btn { min-height: 44px; padding: 0 20px; font-size: 15px; }
+
+/* Hero */
+.hero { display: flex; flex-wrap: wrap; align-items: center; gap: 40px; padding-top: 40px; padding-bottom: 56px; }
+.hero-text { flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+.hero h1 { font-size: clamp(52px, 7vw, 96px); }
+.lead { margin: 0; font-size: 19px; color: var(--muted); max-width: 32rem; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+.perks { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 4px 0 0; padding: 0; list-style: none; font-size: 14px; font-weight: 500; color: var(--muted); }
+.perks li { display: inline-flex; align-items: center; gap: 8px; }
+.perks svg { color: var(--accent); }
+.hero-art { flex: 1 1 480px; min-width: 0; position: relative; }
+.hero-photo { height: clamp(360px, 46vw, 600px); border-radius: 32px; overflow: hidden; background: var(--sage); }
+.hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+.float { position: absolute; display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 10px; border-radius: 20px; background: var(--paper); box-shadow: 0 18px 40px rgba(36,33,29,.12); font-size: 14px; }
+.float img { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; }
+.float strong { display: block; font-size: 15px; }
+.float span { color: var(--muted); font-size: 13px; }
+.float.one { left: -8px; bottom: 28px; }
+.float.two { right: 16px; top: 20px; padding: 10px 16px; gap: 8px; background: var(--butter); font-weight: 600; }
+
+/* Steps */
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; padding-bottom: 72px; }
+.step { display: flex; gap: 16px; align-items: flex-start; padding: 22px; border-radius: 24px; }
+.step:nth-child(1) { background: var(--blush); }
+.step:nth-child(2) { background: var(--sage); }
+.step:nth-child(3) { background: var(--butter); }
+.step:nth-child(4) { background: var(--sky); }
+.step b { flex-shrink: 0; width: 40px; height: 40px; border-radius: 999px; background: var(--paper); display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 22px; font-weight: 400; }
+.step h3 { margin: 0 0 2px; font-size: 17px; }
+.step p { margin: 0; font-size: 14px; color: var(--muted); }
+
+/* Studio */
+.studio { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.studio > .wrap { padding-top: 64px; padding-bottom: 64px; display: flex; flex-direction: column; gap: 32px; }
+.head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.head h2 { font-size: clamp(40px, 5vw, 64px); }
+.head p { margin: 0; color: var(--muted); max-width: 28rem; }
+.tool { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 32px; }
+.photo-col { flex: 1 1 440px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.controls { flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 28px; }
+.drop { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; height: 440px; border: 1.5px dashed #CFC6BA; border-radius: 28px; background: var(--ground); text-align: center; padding: 24px; cursor: pointer; transition: border-color .15s, background .15s; }
+.drop:hover, .drop.over { border-color: var(--accent); background: #FDF3EE; }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.drop-icon { width: 72px; height: 72px; border-radius: 999px; background: var(--blush); color: var(--accent); display: flex; align-items: center; justify-content: center; }
+.drop strong { font-size: 18px; }
+.drop small { font-size: 14px; color: var(--muted); }
+.tips { margin: 0; font-size: 14px; color: var(--muted); }
+.preview { position: relative; height: 440px; border-radius: 28px; overflow: hidden; background: var(--sage); }
+.preview img { width: 100%; height: 100%; object-fit: cover; }
+.preview .btn { position: absolute; right: 14px; bottom: 14px; min-height: 44px; padding: 0 18px; font-size: 14px; }
+.field { display: flex; flex-direction: column; gap: 12px; border: 0; margin: 0; padding: 0; min-width: 0; }
+.label { display: flex; align-items: baseline; gap: 10px; font-weight: 700; font-size: 16px; padding: 0; }
+.label i { font-style: normal; width: 26px; height: 26px; border-radius: 999px; background: var(--ink); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; align-self: center; }
+.label small { font-weight: 500; color: var(--muted); font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); font-size: 15px; font-weight: 500; }
+.chip:hover { border-color: #CFC6BA; }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+.styles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(132px, 100%), 1fr)); gap: 10px; }
+.style { position: relative; display: flex; flex-direction: column; padding: 0; border: 2px solid transparent; border-radius: 20px; overflow: hidden; background: var(--ground); text-align: left; }
+.style img { width: 100%; height: 96px; object-fit: cover; }
+.style span { padding: 8px 12px 10px; font-size: 14px; font-weight: 600; }
+.style[aria-pressed="true"] { border-color: var(--accent); }
+.style[aria-pressed="true"]::after { content: ''; position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 999px; background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/14px no-repeat; }
+.seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 999px; background: var(--ground); border: 1px solid var(--line); }
+.seg button { min-height: 44px; border: 0; border-radius: 999px; background: transparent; font-size: 15px; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 2px 8px rgba(36,33,29,.1); }
+textarea { width: 100%; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--ink); font: inherit; resize: vertical; }
+textarea::placeholder, input::placeholder { color: #8A847A; }
+.go { display: flex; flex-direction: column; gap: 12px; padding: 22px; border-radius: 24px; background: var(--ground); border: 1px solid var(--line); }
+.go .btn, .loading { width: 100%; min-height: 60px; font-size: 17px; }
+.loading { display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 999px; background: var(--ink); color: #fff; font-weight: 600; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin .9s linear infinite; }
+.hint { margin: 0; text-align: center; font-size: 14px; color: var(--muted); }
+.error { margin: 0; padding: 12px 16px; border-radius: 14px; background: #FBE4E1; color: #8C1D18; font-size: 14px; font-weight: 600; }
+details { border-top: 1px solid var(--line); padding-top: 12px; }
+summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; display: flex; align-items: center; gap: 8px; }
+.keyrow { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-top: 10px; }
+.keyrow input { flex: 1 1 220px; min-width: 0; min-height: 46px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font: inherit; color: var(--ink); }
+.keyrow a { font-size: 14px; font-weight: 600; padding: 10px 0; color: var(--accent-dark); }
+.keynote { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+
+/* Result */
+.result { padding-top: 72px; padding-bottom: 40px; display: flex; flex-direction: column; gap: 24px; }
+.empty { margin: 0; padding: 48px 20px; border: 1.5px dashed #CFC6BA; border-radius: 28px; text-align: center; color: var(--muted); }
+.compare { position: relative; height: clamp(320px, 52vw, 680px); border-radius: 32px; overflow: hidden; background: var(--sage); user-select: none; }
+.layer { position: absolute; inset: 0; display: flex; align-items: flex-end; padding: 20px; background-size: cover; background-position: center; }
+.layer.after { justify-content: flex-end; }
+.tag { padding: 7px 14px; border-radius: 999px; background: rgba(255,255,255,.94); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.bar { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1.5px; background: #fff; pointer-events: none; }
+.knob { position: absolute; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 999px; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(36,33,29,.2); pointer-events: none; }
+.compare input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Gallery */
+.gallery-sec { padding-top: 40px; padding-bottom: 88px; display: flex; flex-direction: column; gap: 24px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 20px; }
+.gcard { display: flex; flex-direction: column; border-radius: 24px; overflow: hidden; background: var(--paper); border: 1px solid var(--line); }
+.gcard .thumb { height: 220px; background-size: cover; background-position: center; }
+.gcard .meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 8px 10px 16px; }
+.gcard strong { display: block; font-size: 16px; }
+.gcard small { color: var(--muted); font-size: 13px; }
+.icon-btn { width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; background: transparent; color: var(--muted); text-decoration: none; }
+.icon-btn:hover { background: var(--ground); color: var(--ink); }
+
+footer { border-top: 1px solid var(--line); }
+footer .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 28px; padding-bottom: 36px; font-size: 14px; color: var(--muted); }
+footer .logo { font-size: 24px; color: var(--ink); }
+
+@media (min-width: 768px) {
+  .wrap { padding-left: 32px; padding-right: 32px; }
+  nav a.nl { display: inline-block; }
+  .hero { padding-top: 56px; padding-bottom: 72px; gap: 56px; }
+  .studio > .wrap { padding-top: 88px; padding-bottom: 88px; }
+  .photo-col { position: sticky; top: 92px; }
+  .float.one { left: -24px; }
+}
+@media (max-width: 600px) {
+  .drop, .preview { height: 300px; }
+  .float.one { left: 12px; bottom: 12px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="logo" href="#">Make<em>over</em></a>
+    <nav>
+      <a class="nl" href="#how">How it works</a>
+      <a class="nl" href="#gallery">My designs</a>
+      <a class="btn btn-accent" href="#studio">Start designing</a>
+    </nav>
+  </div>
+</header>
+
+<section class="wrap hero">
+  <div class="hero-text">
+    <span class="eyebrow">AI interior studio</span>
+    <h1 class="serif">Love your room <em>again.</em></h1>
+    <p class="lead">Take one photo, choose a style, and keep the pieces you love. See your space redesigned in about 20 seconds.</p>
+    <div class="ctas">
+      <a class="btn btn-accent" href="#studio">Redesign my room
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <a class="btn btn-line" href="#how">How it works</a>
+    </div>
+    <ul class="perks">
+      <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>No sign-up</li>
+      <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Keep your favourite pieces</li>
+      <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Majlis and Arabic styles</li>
+    </ul>
+  </div>
+  <div class="hero-art">
+    <div class="hero-photo"><img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1400&q=75" alt="A bright modern living room with a grey sofa and large windows"></div>
+    <div class="float one" aria-hidden="true">
+      <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=200&q=60" alt="">
+      <div><strong>Japandi living room</strong><span>Sofa and rug kept</span></div>
+    </div>
+    <div class="float two" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+      7 styles to try
+    </div>
+  </div>
+</section>
+
+<section id="how" class="wrap steps" aria-label="How it works">
+  <div class="step"><b>1</b><div><h3>Upload a photo</h3><p>Any room, shot straight on in daylight.</p></div></div>
+  <div class="step"><b>2</b><div><h3>Pick room and style</h3><p>From Scandinavian to Contemporary Arabic.</p></div></div>
+  <div class="step"><b>3</b><div><h3>Keep what you love</h3><p>Tap the pieces that should stay as they are.</p></div></div>
+  <div class="step"><b>4</b><div><h3>Compare and save</h3><p>Slide between before and after, then download.</p></div></div>
+</section>
+
+<section id="studio" class="studio">
+  <div class="wrap">
+    <div class="head">
+      <h2 class="serif">Design <em>studio</em></h2>
+      <p>Everything happens here, on one screen. Change any choice and generate again.</p>
+    </div>
+
+    <div class="tool">
+      <div class="photo-col">
+        <span class="label"><i>1</i>Your room photo</span>
+        <div id="dropArea">
+          <label class="drop" id="drop">
+            <span class="drop-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+            <strong>Drop your room photo here</strong>
+            <small>or click to choose a JPG or PNG</small>
+            <input type="file" id="file" accept="image/jpeg,image/png" aria-label="Upload a room photo">
+          </label>
+        </div>
+        <div id="previewArea" hidden>
+          <div class="preview">
+            <img id="previewImg" alt="Your uploaded room">
+            <button type="button" class="btn btn-soft" id="changePhoto">Change photo</button>
+          </div>
+        </div>
+        <p class="tips">Tip: stand in a corner and shoot the whole room in daylight for the best result.</p>
+      </div>
+
+      <div class="controls">
+        <fieldset class="field">
+          <legend class="label"><i>2</i>Room type</legend>
+          <div class="chips" id="rooms"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend class="label"><i>3</i>Style</legend>
+          <div class="styles" id="styles"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend class="label"><i>4</i>How much should change?</legend>
+          <div class="seg" id="intensity">
+            <button type="button" data-v="light" aria-pressed="false">Light refresh</button>
+            <button type="button" data-v="full" aria-pressed="true">Full makeover</button>
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend class="label"><i>5</i>Keep these <small>optional</small></legend>
+          <div class="chips" id="keepChips"></div>
+          <label for="keep" class="tips">Anything else? Describe it.</label>
+          <textarea id="keep" rows="2" placeholder="e.g. my grey sofa, the wooden dining table"></textarea>
+        </fieldset>
+
+        <div class="go">
+          <button type="button" class="btn btn-accent" id="generate" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+            Generate my design</button>
+          <div class="loading" id="loading" role="status" hidden>
+            <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
+            Designing your room...
+          </div>
+          <p class="hint" id="hint">Upload a photo to start</p>
+          <p class="error" id="error" role="alert" hidden></p>
+          <details id="keyBox">
+            <summary>Gemini API key <span id="keyState" class="tips">(needed once)</span></summary>
+            <div class="keyrow">
+              <input type="password" id="apiKey" placeholder="Paste your key" autocomplete="off" spellcheck="false" aria-label="Gemini API key">
+              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free key</a>
+            </div>
+            <p class="keynote">Saved only in this browser.</p>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="result" class="wrap result">
+  <div class="head">
+    <h2 class="serif">Before <em>&amp;</em> after</h2>
+    <div class="actions" id="resultActions" hidden>
+      <a class="btn btn-soft" id="download" download="makeover.png">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg>Download</a>
+      <button type="button" class="btn btn-soft" id="again">Try another style</button>
+      <button type="button" class="btn btn-accent" id="save">Save to my designs</button>
+    </div>
+  </div>
+  <p class="empty" id="noResult">Your design will appear here. Drag the slider to compare.</p>
+  <div class="compare" id="compare" hidden>
+    <div class="layer after" id="afterLayer"><span class="tag" id="afterLabel">Makeover</span></div>
+    <div class="layer before" id="beforeLayer"><span class="tag">Before</span></div>
+    <div class="bar" id="bar"></div>
+    <div class="knob" id="knob"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#24211D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></div>
+    <input type="range" id="slider" min="1" max="99" value="50" aria-label="Compare before and after">
+  </div>
+</section>
+
+<section id="gallery" class="wrap gallery-sec">
+  <div class="head">
+    <h2 class="serif">My <em>designs</em></h2>
+    <span id="count" class="tips"></span>
+  </div>
+  <p class="empty" id="galleryEmpty" hidden>Designs you save will appear here.</p>
+  <div class="grid" id="galleryGrid"></div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="logo">Make<em style="color:var(--accent)">over</em></span>
+    <span>Built by Group 36, Outskill AI Accelerator</span>
+  </div>
+</footer>
+
+<script>
+var IMG = function (id, w) { return 'https://images.unsplash.com/photo-' + id + '?w=' + (w || 400) + '&q=65'; };
+var ROOMS = [
+  { id: 'living', name: 'Living room' }, { id: 'bedroom', name: 'Bedroom' }, { id: 'majlis', name: 'Majlis' },
+  { id: 'dining', name: 'Dining room' }, { id: 'kitchen', name: 'Kitchen' }, { id: 'office', name: 'Home office' }
+];
+var STYLES = [
+  { id: 'modern', name: 'Modern', img: '1586023492125-27b2c045efd7',
+    desc: 'clean straight lines, matte lacquer and smooth plaster walls, warm white and soft grey palette with black metal accents, low-profile sofa and sleek furniture, minimal curated decor, recessed warm LED lighting with one sculptural floor lamp' },
+  { id: 'scandi', name: 'Scandinavian', img: '1616486338812-3dadae4b4ace',
+    desc: 'light oak and ash wood, white walls, soft grey and oatmeal textiles, wool throws and a cosy rug, simple functional furniture with tapered legs, a few green plants, bright natural daylight and paper pendant lights' },
+  { id: 'japandi', name: 'Japandi', img: '1618221195710-dd6b41faaea6',
+    desc: 'warm natural wood, linen, rattan and limewash walls, muted earthy palette of sand, clay and charcoal, low grounded furniture, calm uncluttered surfaces, ceramics and a single branch arrangement, soft diffused warm lighting' },
+  { id: 'industrial', name: 'Industrial', img: '1600210492486-724fe5c67fb0',
+    desc: 'exposed brick or concrete feature wall, black steel frames, cognac leather seating, reclaimed wood tables, open shelving, Edison bulb pendants and warm amber lighting' },
+  { id: 'classic', name: 'Classic', img: '1598928506311-c55ded91a20c',
+    desc: 'elegant wall panel mouldings, symmetric layout, rich walnut wood, cream and taupe upholstery, brass and crystal details, tufted armchairs, framed art, layered warm lighting with a chandelier and table lamps' },
+  { id: 'boho', name: 'Boho', img: '1615874959474-d609969a20ed',
+    desc: 'layered patterned rugs and textiles, rattan and cane furniture, macrame and woven wall decor, many green plants, terracotta, mustard and cream palette, floor cushions, warm string and woven pendant lighting' },
+  { id: 'arabic', name: 'Contemporary Arabic', img: '1631679706909-1844bbd07221',
+    desc: 'modern Middle Eastern design with soft arches, geometric mashrabiya screens, warm sand and ivory walls, deep teal and brass accents, low wide seating with cushions, patterned rug, carved wood details, warm lantern-style lighting' }
+];
+var KEEP_ITEMS = ['Sofa', 'Rug', 'Bed', 'Dining table', 'Curtains', 'Plants', 'Artwork', 'Lighting'];
+var KEY = 'makeover-gallery';
+var KEY_STORE = 'makeover-gemini-key';
+var MODEL = 'gemini-2.5-flash-image';
+var state = { photo: '', room: 'living', style: '', intensity: 'full', keep: [], result: '', resultStyle: '', saved: false };
+var $ = function (id) { return document.getElementById(id); };
+var styleById = function (id) { return STYLES.find(function (s) { return s.id === id; }); };
+var roomById = function (id) { return ROOMS.find(function (r) { return r.id === id; }); };
+
+function makeChip(label, pressed, onClick, cls) {
+  var b = document.createElement('button');
+  b.type = 'button';
+  b.className = cls || 'chip';
+  b.setAttribute('aria-pressed', String(pressed));
+  b.textContent = label;
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+// Room type, style, keep chips
+ROOMS.forEach(function (r) {
+  var b = makeChip(r.name, r.id === state.room, function () { state.room = r.id; refresh(); });
+  b.dataset.id = r.id;
+  $('rooms').appendChild(b);
+});
+STYLES.forEach(function (s) {
+  var b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'style';
+  b.dataset.id = s.id;
+  b.setAttribute('aria-pressed', 'false');
+  b.innerHTML = '<img src="' + IMG(s.img) + '" alt="" loading="lazy"><span>' + s.name + '</span>';
+  b.addEventListener('click', function () { state.style = s.id; refresh(); });
+  $('styles').appendChild(b);
+});
+KEEP_ITEMS.forEach(function (k) {
+  var b = makeChip(k, false, function () {
+    var i = state.keep.indexOf(k);
+    if (i < 0) state.keep.push(k); else state.keep.splice(i, 1);
+    refresh();
+  });
+  b.dataset.id = k;
+  $('keepChips').appendChild(b);
+});
+document.querySelectorAll('#intensity button').forEach(function (b) {
+  b.addEventListener('click', function () { state.intensity = b.dataset.v; refresh(); });
+});
+
+// Upload
+function setPhoto(file) {
+  if (!file || !/^image\/(jpeg|png)$/.test(file.type)) { showError('Please choose a JPG or PNG photo.'); return; }
+  var reader = new FileReader();
+  reader.onload = function () { state.photo = reader.result; showError(''); refresh(); };
+  reader.readAsDataURL(file);
+}
+$('file').addEventListener('change', function (e) { setPhoto(e.target.files[0]); e.target.value = ''; });
+['dragenter', 'dragover'].forEach(function (t) {
+  $('drop').addEventListener(t, function (e) { e.preventDefault(); $('drop').classList.add('over'); });
+});
+['dragleave', 'drop'].forEach(function (t) {
+  $('drop').addEventListener(t, function () { $('drop').classList.remove('over'); });
+});
+$('drop').addEventListener('drop', function (e) { e.preventDefault(); setPhoto(e.dataTransfer.files[0]); });
+$('changePhoto').addEventListener('click', function () { $('file').click(); });
+
+// API key (kept in this browser only)
+var keyStored = false;
+function getKey() { return $('apiKey').value.trim(); }
+try { $('apiKey').value = localStorage.getItem(KEY_STORE) || ''; keyStored = true; } catch (e) {}
+$('keyBox').open = !getKey();
+$('apiKey').addEventListener('input', function () {
+  try { localStorage.setItem(KEY_STORE, getKey()); keyStored = true; } catch (e) { keyStored = false; }
+  refresh();
+});
+
+function resizeImage(dataUrl, max, quality) {
+  return new Promise(function (resolve, reject) {
+    var img = new Image();
+    img.onload = function () {
+      var scale = Math.min(1, max / Math.max(img.width, img.height));
+      var c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = function () { reject(new Error('Could not read the photo.')); };
+    img.src = dataUrl;
+  });
+}
+
+// Editing prompt: lock what stays first, then the change, then lighting, then one constraints line
+function buildPrompt() {
+  var s = styleById(state.style);
+  var room = roomById(state.room).name.toLowerCase();
+  var keep = state.keep.map(function (k) { return k.toLowerCase(); });
+  var extra = $('keep').value.trim();
+  if (extra) keep.push(extra);
+  var lines = [
+    'Edit this photo of a ' + room + '.',
+    'Keep the architecture exactly as shown: walls, ceiling, floor plan, windows, doors, openings and room proportions. Keep the same camera position, lens, angle, perspective and framing.'
+  ];
+  if (keep.length) lines.push('Keep these items exactly as they are, in the same position, size, shape, material and color: ' + keep.join(', ') + '.');
+  if (state.intensity === 'light') {
+    lines.push('Make a light refresh in ' + s.name + ' style: keep the current furniture layout and main pieces, and update wall color, textiles, cushions, rug, lighting fixtures, plants and decor to match the style.');
+  } else {
+    lines.push('Make a full makeover as a ' + s.name + ' ' + room + ': replace the furniture, wall finishes, floor finish, textiles, lighting fixtures and decor, arranged in a functional, well-proportioned layout for a ' + room + '.');
+  }
+  lines.push(s.name + ' style details: ' + s.desc + '.');
+  lines.push('Keep the daylight coming from the existing windows in the same direction, with realistic soft shadows and balanced warm interior lighting.');
+  lines.push('Photorealistic professional interior photograph, true-to-life materials and textures, same aspect ratio as the input photo.');
+  lines.push('No people, no text, no watermarks, no extra or moved windows and doors.');
+  return lines.join('\n');
+}
+
+// Try the main image model first; if the key has no quota for it, try the older one that some free keys still allow
+var FALLBACK_MODEL = 'gemini-2.0-flash-preview-image-generation';
+async function callGemini(photo, prompt) {
+  try {
+    return await callModel(MODEL, photo, prompt);
+  } catch (e) {
+    if (!e.noQuota) throw e;
+    try { return await callModel(FALLBACK_MODEL, photo, prompt); } catch (e2) { throw e; }
+  }
+}
+
+async function callModel(model, photo, prompt) {
+  var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': getKey() },
+    body: JSON.stringify({
+      contents: [{ parts: [
+        { inline_data: { mime_type: 'image/jpeg', data: photo.split(',')[1] } },
+        { text: prompt }
+      ] }],
+      generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+    })
+  });
+  var json = await res.json().catch(function () { return {}; });
+  var msg = (json.error && json.error.message) || '';
+  if (/limit: 0/.test(msg)) {
+    var err = new Error('Image generation is not included in the free Gemini tier. In Google AI Studio, open API Keys and click "Set up billing" next to your key, then try again.');
+    err.noQuota = true;
+    throw err;
+  }
+  if (res.status === 429) throw new Error('Gemini is busy or your usage limit was reached. Wait a minute and try again.');
+  if (!res.ok) throw new Error(msg || 'Gemini returned an error (' + res.status + ').');
+  var parts = (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts) || [];
+  var part = parts.find(function (p) { return p.inlineData || p.inline_data; });
+  if (!part) throw new Error('Gemini did not return an image. Try again, or try another style.');
+  var d = part.inlineData || part.inline_data;
+  return 'data:' + (d.mimeType || d.mime_type || 'image/png') + ';base64,' + d.data;
+}
+
+function showError(msg) { $('error').textContent = msg; $('error').hidden = !msg; }
+
+$('generate').addEventListener('click', async function () {
+  showError('');
+  $('generate').hidden = true;
+  $('loading').hidden = false;
+  try {
+    var photo = await resizeImage(state.photo, 1536, 0.9);
+    state.result = await callGemini(photo, buildPrompt());
+    state.resultStyle = state.style;
+    state.resultRoom = state.room;
+    state.saved = false;
+    $('slider').value = 50;
+    refresh();
+    $('result').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) {
+    showError(e.message === 'Failed to fetch' ? 'Could not reach Gemini. Check your internet connection.' : e.message);
+  } finally {
+    $('generate').hidden = false;
+    $('loading').hidden = true;
+  }
+});
+
+// Compare slider: before on the left, after on the right
+function setSlider(v) {
+  $('beforeLayer').style.clipPath = 'inset(0 ' + (100 - v) + '% 0 0)';
+  $('bar').style.left = v + '%';
+  $('knob').style.left = v + '%';
+}
+$('slider').addEventListener('input', function (e) { setSlider(Number(e.target.value)); });
+
+$('again').addEventListener('click', function () {
+  $('styles').scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+// Gallery (saved in this browser)
+function loadGallery() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; }
+}
+function storeGallery(list) {
+  try { localStorage.setItem(KEY, JSON.stringify(list)); return true; } catch (e) { return false; }
+}
+var gallery = loadGallery().filter(function (g) { return styleById(g.style); });
+
+$('save').addEventListener('click', async function () {
+  if (state.saved || !state.result) return;
+  var item = {
+    id: Date.now(), style: state.resultStyle, room: state.resultRoom,
+    date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  };
+  try { item.thumb = await resizeImage(state.result, 720, 0.75); } catch (e) {}
+  gallery.unshift(item);
+  if (!storeGallery(gallery)) {
+    delete item.thumb;
+    storeGallery(gallery);
+    showError('Browser storage is full, so this design was saved without its image.');
+  }
+  state.saved = true;
+  refresh();
+});
+
+var TRASH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4h6v3"/></svg>';
+var DOWN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg>';
+
+function renderGallery() {
+  var grid = $('galleryGrid');
+  grid.innerHTML = '';
+  gallery.forEach(function (g) {
+    var s = styleById(g.style);
+    var room = g.room && roomById(g.room) ? roomById(g.room).name : '';
+    var card = document.createElement('article');
+    card.className = 'gcard';
+    card.innerHTML =
+      '<div class="thumb" style="background-image:url(' + (g.thumb || IMG(s.img, 720)) + ')"></div>' +
+      '<div class="meta"><div><strong>' + s.name + (room ? ' · ' + room : '') + '</strong><small>' + g.date + '</small></div>' +
+      '<div style="display:flex">' +
+      (g.thumb ? '<a class="icon-btn" href="' + g.thumb + '" download="makeover-' + s.id + '.jpg" aria-label="Download ' + s.name + ' design">' + DOWN + '</a>' : '') +
+      '<button type="button" class="icon-btn del" aria-label="Delete ' + s.name + ' design">' + TRASH + '</button></div></div>';
+    card.querySelector('.del').addEventListener('click', function () {
+      gallery = gallery.filter(function (h) { return h.id !== g.id; });
+      storeGallery(gallery);
+      renderGallery();
+    });
+    grid.appendChild(card);
+  });
+  $('galleryEmpty').hidden = gallery.length > 0;
+  $('count').textContent = gallery.length === 1 ? '1 saved' : gallery.length + ' saved';
+}
+
+function pressAll(sel, isOn) {
+  document.querySelectorAll(sel).forEach(function (b) { b.setAttribute('aria-pressed', String(isOn(b))); });
+}
+
+function refresh() {
+  pressAll('#rooms .chip', function (b) { return b.dataset.id === state.room; });
+  pressAll('#styles .style', function (b) { return b.dataset.id === state.style; });
+  pressAll('#keepChips .chip', function (b) { return state.keep.indexOf(b.dataset.id) >= 0; });
+  pressAll('#intensity button', function (b) { return b.dataset.v === state.intensity; });
+
+  $('dropArea').hidden = !!state.photo;
+  $('previewArea').hidden = !state.photo;
+  if (state.photo) $('previewImg').src = state.photo;
+
+  var hasKey = !!getKey();
+  var ready = !!state.photo && !!state.style && hasKey;
+  $('generate').disabled = !ready;
+  $('keyState').textContent = !hasKey ? '(needed once)' : keyStored ? '(saved)' : '(this visit only: open the file in Chrome or Edge to keep it)';
+  $('hint').textContent = !state.photo ? 'Upload a photo to start'
+    : !state.style ? 'Now pick a style'
+    : !hasKey ? 'Add your Gemini API key below'
+    : 'Takes about 20 seconds';
+
+  var has = !!state.result;
+  $('noResult').hidden = has;
+  $('compare').hidden = !has;
+  $('resultActions').hidden = !has;
+  if (has) {
+    $('afterLabel').textContent = styleById(state.resultStyle).name;
+    $('afterLayer').style.backgroundImage = 'url(' + state.result + ')';
+    $('beforeLayer').style.backgroundImage = 'url(' + state.photo + ')';
+    $('download').href = state.result;
+    setSlider(Number($('slider').value));
+  }
+  $('save').textContent = state.saved ? 'Saved' : 'Save to my designs';
+  renderGallery();
+}
+refresh();
+</script>
+</body>
+</html>
