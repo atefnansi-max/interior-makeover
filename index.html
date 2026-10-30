@@ -146,6 +146,17 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .knob { position: absolute; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 999px; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(36,33,29,.2); pointer-events: none; }
 .compare input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.refine { display: flex; flex-direction: column; gap: 16px; padding: 24px; border-radius: 28px; background: var(--sage); }
+.refine h3 { font-size: 34px; }
+.refine .tips { margin: 4px 0 0; color: #3F4A3A; }
+.refine .chip { background: rgba(255,255,255,.75); border-color: transparent; }
+.refine-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.refine-row input { flex: 1 1 280px; min-width: 0; min-height: 52px; padding: 0 20px; border: 1px solid transparent; border-radius: 999px; background: var(--paper); font: inherit; color: var(--ink); }
+.refine-row .btn, .refine-row .loading { flex: 0 0 auto; min-height: 52px; width: auto; padding: 0 26px; font-size: 16px; }
+.versions { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+.version { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; padding: 4px; border: 2px solid transparent; border-radius: 16px; background: var(--paper); font-size: 13px; font-weight: 600; }
+.version img { width: 112px; height: 72px; object-fit: cover; border-radius: 12px; }
+.version[aria-pressed="true"] { border-color: var(--accent); }
 .cost { display: inline-flex; letter-spacing: 1px; }
 .cost b { font-weight: 700; color: var(--accent); }
 .cost b.off { color: #CFC6BA; }
@@ -342,6 +353,24 @@ footer .logo { font-size: 24px; color: var(--ink); }
     <input type="range" id="slider" min="1" max="99" value="50" aria-label="Compare before and after">
     <div class="cost-badge" id="costBadge"></div>
   </div>
+  <div class="versions" id="versions" hidden></div>
+  <div class="refine" id="refineBox" hidden>
+    <div>
+      <h3 class="serif">Refine this <em>design</em></h3>
+      <p class="tips">Ask for one change at a time. Everything else stays as it is.</p>
+    </div>
+    <div class="chips" id="refineChips"></div>
+    <div class="refine-row">
+      <label for="refineText" class="sr">Describe a change</label>
+      <input type="text" id="refineText" placeholder="e.g. make the sofa sage green, add a large plant by the window" autocomplete="off">
+      <button type="button" class="btn btn-accent" id="refineBtn">Apply change</button>
+      <div class="loading" id="refineLoading" role="status" hidden>
+        <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
+        Applying...
+      </div>
+    </div>
+    <p class="error" id="refineError" role="alert" hidden></p>
+  </div>
   <div class="notes" id="notes" hidden>
     <span class="eyebrow">Designer notes</span>
     <dl id="notesList"></dl>
@@ -426,7 +455,7 @@ var KEEP_ITEMS = ['Sofa', 'Rug', 'Bed', 'Dining table', 'Curtains', 'Plants', 'A
 var KEY = 'makeover-gallery';
 var KEY_STORE = 'makeover-gemini-key';
 var MODEL = 'gemini-2.5-flash-image';
-var state = { photo: '', room: 'living', style: '', intensity: 'full', budget: 'mid', keep: [], result: '', notes: [], resultStyle: '', saved: false };
+var state = { photo: '', room: 'living', style: '', intensity: 'full', budget: 'mid', keep: [], result: '', notes: [], versions: [], vIndex: 0, resultStyle: '', saved: false };
 var $ = function (id) { return document.getElementById(id); };
 var styleById = function (id) { return STYLES.find(function (s) { return s.id === id; }); };
 var roomById = function (id) { return ROOMS.find(function (r) { return r.id === id; }); };
@@ -632,6 +661,8 @@ $('generate').addEventListener('click', async function () {
     state.result = out.img;
     state.notes = out.notes;
     state.cost = costLevel(out.notes, state.budget);
+    state.versions = [{ img: state.result, notes: state.notes, cost: state.cost, label: 'Original design' }];
+    state.vIndex = 0;
     state.resultStyle = state.style;
     state.resultRoom = state.room;
     state.saved = false;
@@ -645,6 +676,82 @@ $('generate').addEventListener('click', async function () {
     $('loading').hidden = true;
   }
 });
+
+// Refine: edit the current design one change at a time, keeping everything else
+var REFINE_IDEAS = ['Warmer lighting', 'Lighter, brighter colors', 'Add more plants', 'Change the rug', 'More luxurious finishes', 'Add artwork on the wall', 'Cozier textiles'];
+REFINE_IDEAS.forEach(function (idea) {
+  $('refineChips').appendChild(makeChip(idea, false, function () { $('refineText').value = idea; $('refineText').focus(); }));
+});
+
+function buildRefinePrompt(change) {
+  var s = styleById(state.resultStyle);
+  return [
+    'Edit this interior photo.',
+    'Keep the composition, camera angle, perspective, architecture, furniture layout and every element exactly as shown, except for this one change: ' + change + '.',
+    'Keep the ' + s.name + ' style, the same daylight direction and shadows, photorealistic quality and the same aspect ratio.',
+    'Also reply with a short note in exactly this format:\nChange: <what you changed>\nCost level: <exactly one of $, $$, $$$, $$$$, $$$$$ for the relative cost of the room as shown now>',
+    'No people, no text inside the image, no watermarks, no extra or moved windows and doors.'
+  ].join('\n');
+}
+
+function showRefineError(msg) { $('refineError').textContent = msg; $('refineError').hidden = !msg; }
+
+async function applyRefine() {
+  var change = $('refineText').value.trim();
+  if (!change) { showRefineError('Type a change first, or tap one of the ideas.'); $('refineText').focus(); return; }
+  if (!getKey()) { showRefineError('Add your Gemini API key in the studio first.'); return; }
+  showRefineError('');
+  $('refineBtn').hidden = true;
+  $('refineLoading').hidden = false;
+  try {
+    var current = await resizeImage(state.result, 1536, 0.9);
+    var out = await callGemini(current, buildRefinePrompt(change));
+    var notes = state.notes.filter(function (n) { return n.label !== 'Cost level'; })
+      .concat(out.notes.filter(function (n) { return n.label === 'Cost level'; }));
+    var v = { img: out.img, notes: notes, cost: costLevel(out.notes, state.budget), label: change.length > 28 ? change.slice(0, 26) + '…' : change };
+    state.versions = state.versions.slice(0, state.vIndex + 1).concat([v]);
+    showVersion(state.versions.length - 1);
+    $('refineText').value = '';
+  } catch (e) {
+    showRefineError(e.message === 'Failed to fetch' ? 'Could not reach Gemini. Check your internet connection.' : e.message);
+  } finally {
+    $('refineBtn').hidden = false;
+    $('refineLoading').hidden = true;
+  }
+}
+$('refineBtn').addEventListener('click', applyRefine);
+$('refineText').addEventListener('keydown', function (e) { if (e.key === 'Enter') applyRefine(); });
+
+function showVersion(i) {
+  var v = state.versions[i];
+  state.vIndex = i;
+  state.result = v.img;
+  state.notes = v.notes;
+  state.cost = v.cost;
+  state.saved = false;
+  refresh();
+}
+
+function renderVersions() {
+  var box = $('versions');
+  var list = state.versions || [];
+  box.hidden = list.length < 2;
+  box.innerHTML = '';
+  list.forEach(function (v, i) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'version';
+    b.setAttribute('aria-pressed', String(i === state.vIndex));
+    var img = document.createElement('img');
+    img.src = v.img;
+    img.alt = '';
+    var span = document.createElement('span');
+    span.textContent = (i + 1) + '. ' + v.label;
+    b.append(img, span);
+    b.addEventListener('click', function () { showVersion(i); });
+    box.appendChild(b);
+  });
+}
 
 // Compare slider: before on the left, after on the right
 function setSlider(v) {
@@ -741,6 +848,8 @@ function refresh() {
   $('noResult').hidden = has;
   $('compare').hidden = !has;
   $('resultActions').hidden = !has;
+  $('refineBox').hidden = !has;
+  renderVersions();
   if (has) {
     $('afterLabel').textContent = styleById(state.resultStyle).name;
     $('afterLayer').style.backgroundImage = 'url(' + state.result + ')';
