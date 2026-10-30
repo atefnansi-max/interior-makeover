@@ -276,7 +276,16 @@ footer .logo { font-size: 24px; color: var(--ink); }
         </fieldset>
 
         <fieldset class="field">
-          <legend class="label"><i>5</i>Keep these <small>optional</small></legend>
+          <legend class="label"><i>5</i>Budget</legend>
+          <div class="seg" id="budget">
+            <button type="button" data-v="budget" aria-pressed="false">Affordable</button>
+            <button type="button" data-v="mid" aria-pressed="true">Mid-range</button>
+            <button type="button" data-v="luxury" aria-pressed="false">Luxury</button>
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend class="label"><i>6</i>Keep these <small>optional</small></legend>
           <div class="chips" id="keepChips"></div>
           <label for="keep" class="tips">Anything else? Describe it.</label>
           <textarea id="keep" rows="2" placeholder="e.g. my grey sofa, the wooden dining table"></textarea>
@@ -408,7 +417,7 @@ var KEEP_ITEMS = ['Sofa', 'Rug', 'Bed', 'Dining table', 'Curtains', 'Plants', 'A
 var KEY = 'makeover-gallery';
 var KEY_STORE = 'makeover-gemini-key';
 var MODEL = 'gemini-2.5-flash-image';
-var state = { photo: '', room: 'living', style: '', intensity: 'full', keep: [], result: '', notes: [], resultStyle: '', saved: false };
+var state = { photo: '', room: 'living', style: '', intensity: 'full', budget: 'mid', keep: [], result: '', notes: [], resultStyle: '', saved: false };
 var $ = function (id) { return document.getElementById(id); };
 var styleById = function (id) { return STYLES.find(function (s) { return s.id === id; }); };
 var roomById = function (id) { return ROOMS.find(function (r) { return r.id === id; }); };
@@ -450,6 +459,9 @@ KEEP_ITEMS.forEach(function (k) {
 });
 document.querySelectorAll('#intensity button').forEach(function (b) {
   b.addEventListener('click', function () { state.intensity = b.dataset.v; refresh(); });
+});
+document.querySelectorAll('#budget button').forEach(function (b) {
+  b.addEventListener('click', function () { state.budget = b.dataset.v; refresh(); });
 });
 
 // Upload
@@ -495,6 +507,12 @@ function resizeImage(dataUrl, max, quality) {
   });
 }
 
+var BUDGETS = {
+  budget: 'affordable. Use accessible ready-made furniture and decor of the kind found in high-street and flat-pack stores, paint and wallpaper instead of panelling or stone, laminate, vinyl or simple tile finishes, and get impact from color, textiles, rugs, plants and lighting. Avoid marble, custom joinery and designer pieces',
+  mid: 'mid-range. Mix good-quality ready-made furniture with one or two investment pieces, solid wood and quality natural fabrics, simple built-in joinery and good lighting fixtures',
+  luxury: 'luxury. Use high-end finishes and craftsmanship: natural stone and marble, bespoke joinery and wall panelling, designer and custom furniture, premium fabrics such as velvet, silk, boucle and fine wool, statement designer lighting and refined detailing like brass inlays and fluted surfaces'
+};
+
 // Editing prompt: lock what stays first, then the change, then lighting, then one constraints line
 function buildPrompt() {
   var s = styleById(state.style);
@@ -516,6 +534,7 @@ function buildPrompt() {
   if (state.intensity === 'bold') {
     lines.push('Be bold and creative while staying true to the style: add one signature statement piece, a feature wall treatment such as fluted panels, limewash, panelling or an arch niche, one unexpected accent color, and sculptural lighting.');
   }
+  lines.push('BUDGET: ' + BUDGETS[state.budget] + '. Choose furniture, materials and finishes that honestly match this budget while keeping the style.');
   lines.push('- Palette: ' + s.palette + '.');
   lines.push('- Materials and finishes: ' + s.materials + '.');
   lines.push('- Key pieces: ' + s.pieces + '.');
@@ -523,7 +542,7 @@ function buildPrompt() {
   lines.push('- Styling: ' + s.styling + '.');
   lines.push('Compose one clear focal point, a balanced rhythm of heights, and a mix of textures (matte, soft, natural, a touch of metal) so the room feels layered and lived-in, not staged.');
   lines.push('OUTPUT: one photorealistic interior photograph in editorial architectural photography quality, true-to-life textures, same aspect ratio as the input photo.');
-  lines.push('Also reply with a short designer note in exactly this format:\nConcept: <one line>\nPalette: <3 to 5 colors>\nMaterials: <key materials>\nStatement piece: <one item>\nLighting: <one line>');
+  lines.push('Also reply with a short designer note in exactly this format:\nConcept: <one line>\nPalette: <3 to 5 colors>\nMaterials: <key materials>\nStatement piece: <one item>\nLighting: <one line>\nBudget tip: <one practical way this design fits the budget>');
   lines.push('No people, no text inside the image, no watermarks, no extra or moved windows and doors.');
   return lines.join('\n');
 }
@@ -570,7 +589,7 @@ async function callModel(model, photo, prompt) {
 
 // Pull "Label: value" lines from the designer note Gemini writes next to the image
 function parseNotes(text) {
-  var want = ['Concept', 'Palette', 'Materials', 'Statement piece', 'Lighting'];
+  var want = ['Concept', 'Palette', 'Materials', 'Statement piece', 'Lighting', 'Budget tip'];
   return want.map(function (label) {
     var m = text.match(new RegExp('^\\W*' + label + '\\W*:\\s*(.+)$', 'im'));
     return m ? { label: label, value: m[1].replace(/\*+/g, '').trim() } : null;
@@ -677,6 +696,7 @@ function refresh() {
   pressAll('#styles .style', function (b) { return b.dataset.id === state.style; });
   pressAll('#keepChips .chip', function (b) { return state.keep.indexOf(b.dataset.id) >= 0; });
   pressAll('#intensity button', function (b) { return b.dataset.v === state.intensity; });
+  pressAll('#budget button', function (b) { return b.dataset.v === state.budget; });
 
   $('dropArea').hidden = !!state.photo;
   $('previewArea').hidden = !state.photo;
