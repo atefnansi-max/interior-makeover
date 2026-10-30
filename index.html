@@ -146,6 +146,12 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .knob { position: absolute; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 999px; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(36,33,29,.2); pointer-events: none; }
 .compare input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.cost { display: inline-flex; letter-spacing: 1px; }
+.cost b { font-weight: 700; color: var(--accent); }
+.cost b.off { color: #CFC6BA; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.cost-badge { position: absolute; top: 20px; right: 20px; display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-radius: 999px; background: rgba(255,255,255,.95); font-size: 13px; font-weight: 700; pointer-events: none; }
+.cost-badge .cost { font-size: 17px; }
 .notes { display: flex; flex-direction: column; gap: 14px; padding: 24px; border-radius: 28px; background: var(--paper); border: 1px solid var(--line); }
 .notes dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 16px 24px; }
 .notes dt { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--accent); }
@@ -334,6 +340,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
     <div class="bar" id="bar"></div>
     <div class="knob" id="knob"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#24211D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></div>
     <input type="range" id="slider" min="1" max="99" value="50" aria-label="Compare before and after">
+    <div class="cost-badge" id="costBadge"></div>
   </div>
   <div class="notes" id="notes" hidden>
     <span class="eyebrow">Designer notes</span>
@@ -515,6 +522,20 @@ var BUDGETS = {
   luxury: 'luxury. Use high-end finishes and craftsmanship: natural stone and marble, bespoke joinery and wall panelling, designer and custom furniture, premium fabrics such as velvet, silk, boucle and fine wool, statement designer lighting and refined detailing like brass inlays and fluted surfaces'
 };
 
+// Relative cost: Gemini's own estimate from the design it drew, else the budget the user picked
+var BUDGET_COST = { budget: 2, mid: 3, luxury: 5 };
+function costLevel(notes, budget) {
+  var n = (notes || []).find(function (x) { return x.label === 'Cost level'; });
+  var m = n && n.value.match(/\$+/);
+  return m ? Math.min(5, m[0].length) : BUDGET_COST[budget];
+}
+var COST_WORDS = ['', 'Very low cost', 'Low cost', 'Mid-range cost', 'High cost', 'Luxury cost'];
+function costHtml(level) {
+  var s = '';
+  for (var i = 1; i <= 5; i++) s += '<b' + (i > level ? ' class="off"' : '') + '>$</b>';
+  return '<span class="cost" title="' + COST_WORDS[level] + '"><span class="sr">' + COST_WORDS[level] + ': </span>' + s + '</span>';
+}
+
 // Editing prompt: lock what stays first, then the change, then lighting, then one constraints line
 function buildPrompt() {
   var s = styleById(state.style);
@@ -544,7 +565,7 @@ function buildPrompt() {
   lines.push('- Styling: ' + s.styling + '.');
   lines.push('Compose one clear focal point, a balanced rhythm of heights, and a mix of textures (matte, soft, natural, a touch of metal) so the room feels layered and lived-in, not staged.');
   lines.push('OUTPUT: one photorealistic interior photograph in editorial architectural photography quality, true-to-life textures, same aspect ratio as the input photo.');
-  lines.push('Also reply with a short designer note in exactly this format:\nConcept: <one line>\nPalette: <3 to 5 colors>\nMaterials: <key materials>\nStatement piece: <one item>\nLighting: <one line>\nBudget tip: <one practical way this design fits the budget>');
+  lines.push('Also reply with a short designer note in exactly this format:\nConcept: <one line>\nPalette: <3 to 5 colors>\nMaterials: <key materials>\nStatement piece: <one item>\nLighting: <one line>\nBudget tip: <one practical way this design fits the budget>\nCost level: <exactly one of $, $$, $$$, $$$$, $$$$$ for the relative cost to furnish and finish the room as shown, where $ is very low cost and $$$$$ is high-end luxury>');
   lines.push('No people, no text inside the image, no watermarks, no extra or moved windows and doors.');
   return lines.join('\n');
 }
@@ -592,7 +613,7 @@ async function callModel(model, photo, prompt) {
 
 // Pull "Label: value" lines from the designer note Gemini writes next to the image
 function parseNotes(text) {
-  var want = ['Concept', 'Palette', 'Materials', 'Statement piece', 'Lighting', 'Budget tip'];
+  var want = ['Concept', 'Palette', 'Materials', 'Statement piece', 'Lighting', 'Budget tip', 'Cost level'];
   return want.map(function (label) {
     var m = text.match(new RegExp('^\\W*' + label + '\\W*:\\s*(.+)$', 'im'));
     return m ? { label: label, value: m[1].replace(/\*+/g, '').trim() } : null;
@@ -610,6 +631,7 @@ $('generate').addEventListener('click', async function () {
     var out = await callGemini(photo, buildPrompt());
     state.result = out.img;
     state.notes = out.notes;
+    state.cost = costLevel(out.notes, state.budget);
     state.resultStyle = state.style;
     state.resultRoom = state.room;
     state.saved = false;
@@ -648,7 +670,7 @@ var gallery = loadGallery().filter(function (g) { return styleById(g.style); });
 $('save').addEventListener('click', async function () {
   if (state.saved || !state.result) return;
   var item = {
-    id: Date.now(), style: state.resultStyle, room: state.resultRoom,
+    id: Date.now(), style: state.resultStyle, room: state.resultRoom, cost: state.cost,
     date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   };
   try { item.thumb = await resizeImage(state.result, 720, 0.75); } catch (e) {}
@@ -675,7 +697,7 @@ function renderGallery() {
     card.className = 'gcard';
     card.innerHTML =
       '<div class="thumb" style="background-image:url(' + (g.thumb || IMG(s.img, 720)) + ')"></div>' +
-      '<div class="meta"><div><strong>' + s.name + (room ? ' · ' + room : '') + '</strong><small>' + g.date + '</small></div>' +
+      '<div class="meta"><div><strong>' + s.name + (room ? ' · ' + room : '') + '</strong><small>' + g.date + (g.cost ? ' · ' + costHtml(g.cost) : '') + '</small></div>' +
       '<div style="display:flex">' +
       (g.thumb ? '<a class="icon-btn" href="' + g.thumb + '" download="makeover-' + s.id + '.jpg" aria-label="Download ' + s.name + ' design">' + DOWN + '</a>' : '') +
       '<button type="button" class="icon-btn del" aria-label="Delete ' + s.name + ' design">' + TRASH + '</button></div></div>';
@@ -724,9 +746,10 @@ function refresh() {
     $('afterLayer').style.backgroundImage = 'url(' + state.result + ')';
     $('beforeLayer').style.backgroundImage = 'url(' + state.photo + ')';
     $('download').href = state.result;
+    $('costBadge').innerHTML = 'Relative cost ' + costHtml(state.cost || 3);
     setSlider(Number($('slider').value));
   }
-  var notes = has && state.notes ? state.notes : [];
+  var notes = has && state.notes ? state.notes.filter(function (n) { return n.label !== 'Cost level'; }) : [];
   $('notes').hidden = !notes.length;
   $('notesList').innerHTML = '';
   notes.forEach(function (n) {
