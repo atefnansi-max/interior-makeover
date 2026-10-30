@@ -1061,11 +1061,27 @@ function renderAngles() {
     dl.download = 'makeover-' + v.name.toLowerCase().replace(/[^a-z]+/g, '-') + '.png';
     dl.setAttribute('aria-label', 'Download ' + v.name);
     dl.innerHTML = DOWN;
-    meta.append(label, dl);
+    var save = document.createElement('button');
+    save.type = 'button';
+    save.className = 'icon-btn';
+    save.setAttribute('aria-label', v.saved ? v.name + ' saved' : 'Save ' + v.name + ' to my designs');
+    save.innerHTML = v.saved ? SAVED : SAVE;
+    save.disabled = !!v.saved;
+    save.addEventListener('click', async function () {
+      var ok = await saveToGallery(v.img, ' · ' + v.name);
+      if (ok) { v.saved = true; renderAngles(); }
+    });
+    var tools = document.createElement('div');
+    tools.style.display = 'flex';
+    tools.append(save, dl);
+    meta.append(label, tools);
     card.append(open, meta);
     grid.appendChild(card);
   });
 }
+
+var SAVE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v16l-6-4-6 4z"/></svg>';
+var SAVED = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v16l-6-4-6 4z"/></svg>';
 
 function openLightbox(src, name) {
   $('lightboxImg').src = src;
@@ -1161,25 +1177,37 @@ async function loadGallery() {
   renderGallery();
 }
 
-$('save').addEventListener('click', async function () {
-  if (state.saved || !state.result) return;
+// Saves any image of the current design (the main result or an angle view) to My designs
+async function saveToGallery(img, suffix) {
   var s = styleById(state.resultStyle);
   var r = roomById(state.resultRoom);
   var item = {
     id: Date.now(), style: state.resultStyle, room: state.resultRoom, cost: state.cost,
-    name: s.name + ' ' + r.name.toLowerCase(), note: '',
+    name: s.name + ' ' + r.name.toLowerCase() + (suffix || ''), note: '',
     date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   };
-  try { item.thumb = await resizeImage(state.result, 720, 0.8); } catch (e) {}
-  if (useDb) item.img = state.result;
+  try { item.thumb = await resizeImage(img, 720, 0.8); } catch (e) {}
+  if (useDb) item.img = img;
   gallery.unshift(item);
   try {
     await designs.put(item);
   } catch (e) {
     gallery.shift();
     alert('This design could not be saved because browser storage is full. Use Download to keep the picture, or delete older designs.');
-    return;
+    return false;
   }
+  renderGallery();
+  var card = document.querySelector('#galleryGrid .gcard');
+  if (card) {
+    card.classList.add('fresh');
+    setTimeout(function () { card.classList.remove('fresh'); }, 2500);
+  }
+  return true;
+}
+
+$('save').addEventListener('click', async function () {
+  if (state.saved || !state.result) return;
+  if (!(await saveToGallery(state.result))) return;
   state.saved = true;
   refresh();
   // Take the user to the saved card so they can see it landed
