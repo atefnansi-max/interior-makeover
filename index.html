@@ -324,7 +324,8 @@ footer .logo { font-size: 24px; color: var(--ink); }
             <summary>Gemini API key <span id="keyState" class="tips">(needed once)</span></summary>
             <div class="keyrow">
               <input type="text" id="apiKey" name="gemini-key-field" class="masked" placeholder="Paste your key (starts with AIza)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore aria-label="Gemini API key">
-              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free key</a>
+              <button type="button" class="btn btn-soft" id="clearKey" style="min-height:46px;padding:0 18px;font-size:14px">Clear</button>
+              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a key</a>
             </div>
             <p class="keynote">Saved only in this browser. No subscription and no plan to buy: you only pay Google directly for the images you create, usually a few cents each.</p>
           </details>
@@ -524,6 +525,18 @@ var keyStored = false;
 function getKey() { return $('apiKey').value.trim(); }
 try { $('apiKey').value = localStorage.getItem(KEY_STORE) || ''; keyStored = true; } catch (e) {}
 $('keyBox').open = !getKey();
+$('clearKey').addEventListener('click', function () {
+  $('apiKey').value = '';
+  try { localStorage.removeItem(KEY_STORE); } catch (e) {}
+  showError('');
+  refresh();
+  $('apiKey').focus();
+});
+function openKeyField() {
+  $('keyBox').open = true;
+  $('apiKey').focus();
+  $('apiKey').select();
+}
 $('apiKey').addEventListener('input', function () {
   try { localStorage.setItem(KEY_STORE, getKey()); keyStored = true; } catch (e) { keyStored = false; }
   refresh();
@@ -629,7 +642,7 @@ async function callModel(model, photo, prompt) {
     err.noQuota = true;
     throw err;
   }
-  if (/API key not valid/i.test(msg)) throw new Error('Google says this API key is not valid. In Google AI Studio, open API Keys, click the copy icon next to your key, then clear the key field here and paste it again.');
+  if (/API key not valid/i.test(msg)) throw new Error('Google says this API key is not valid. Click Clear below, then in Google AI Studio open API Keys, copy your key with the copy icon, and paste it into the field.');
   if (res.status === 429) throw new Error('Gemini is busy or your usage limit was reached. Wait a minute and try again.');
   if (!res.ok) throw new Error(msg || 'Gemini returned an error (' + res.status + ').');
   var parts = (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts) || [];
@@ -671,6 +684,7 @@ $('generate').addEventListener('click', async function () {
     $('result').scrollIntoView({ behavior: 'smooth' });
   } catch (e) {
     showError(e.message === 'Failed to fetch' ? 'Could not reach Gemini. Check your internet connection.' : e.message);
+    if (/not valid/i.test(e.message)) openKeyField();
   } finally {
     $('generate').hidden = false;
     $('loading').hidden = true;
@@ -836,6 +850,7 @@ function refresh() {
 
   var hasKey = !!getKey();
   var keyLooksWrong = hasKey && !/^AIza[\w-]{30,}$/.test(getKey());
+  if (keyLooksWrong) $('keyBox').open = true;
   var ready = !!state.photo && !!state.style && hasKey;
   $('generate').disabled = !ready;
   $('keyState').textContent = !hasKey ? '(needed once)' : keyLooksWrong ? '(this does not look like a Gemini key: it should start with AIza)' : keyStored ? '(saved)' : '(this visit only: open the file in Chrome or Edge to keep it)';
