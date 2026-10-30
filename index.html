@@ -131,6 +131,7 @@ details { border-top: 1px solid var(--line); padding-top: 12px; }
 summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; display: flex; align-items: center; gap: 8px; }
 .keyrow { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-top: 10px; }
 .keyrow input { flex: 1 1 220px; min-width: 0; min-height: 46px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font: inherit; color: var(--ink); }
+.masked { -webkit-text-security: disc; }
 .keyrow a { font-size: 14px; font-weight: 600; padding: 10px 0; color: var(--accent-dark); }
 .keynote { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
 
@@ -305,7 +306,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
           <details id="keyBox">
             <summary>Gemini API key <span id="keyState" class="tips">(needed once)</span></summary>
             <div class="keyrow">
-              <input type="password" id="apiKey" placeholder="Paste your key" autocomplete="off" spellcheck="false" aria-label="Gemini API key">
+              <input type="text" id="apiKey" name="gemini-key-field" class="masked" placeholder="Paste your key (starts with AIza)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore aria-label="Gemini API key">
               <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free key</a>
             </div>
             <p class="keynote">Saved only in this browser. No subscription and no plan to buy: you only pay Google directly for the images you create, usually a few cents each.</p>
@@ -578,6 +579,7 @@ async function callModel(model, photo, prompt) {
     err.noQuota = true;
     throw err;
   }
+  if (/API key not valid/i.test(msg)) throw new Error('Google says this API key is not valid. In Google AI Studio, open API Keys, click the copy icon next to your key, then clear the key field here and paste it again.');
   if (res.status === 429) throw new Error('Gemini is busy or your usage limit was reached. Wait a minute and try again.');
   if (!res.ok) throw new Error(msg || 'Gemini returned an error (' + res.status + ').');
   var parts = (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts) || [];
@@ -704,9 +706,10 @@ function refresh() {
   if (state.photo) $('previewImg').src = state.photo;
 
   var hasKey = !!getKey();
+  var keyLooksWrong = hasKey && !/^AIza[\w-]{30,}$/.test(getKey());
   var ready = !!state.photo && !!state.style && hasKey;
   $('generate').disabled = !ready;
-  $('keyState').textContent = !hasKey ? '(needed once)' : keyStored ? '(saved)' : '(this visit only: open the file in Chrome or Edge to keep it)';
+  $('keyState').textContent = !hasKey ? '(needed once)' : keyLooksWrong ? '(this does not look like a Gemini key: it should start with AIza)' : keyStored ? '(saved)' : '(this visit only: open the file in Chrome or Edge to keep it)';
   $('hint').textContent = !state.photo ? 'Upload a photo to start'
     : !state.style ? 'Now pick a style'
     : !hasKey ? 'Add your Gemini API key below'
