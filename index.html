@@ -173,6 +173,12 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 20px; }
 .gcard { display: flex; flex-direction: column; border-radius: 24px; overflow: hidden; background: var(--paper); border: 1px solid var(--line); }
 .gcard { transition: box-shadow .4s, border-color .4s; }
+.gnote { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+.gedit { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px 16px; }
+.gedit label { font-size: 13px; font-weight: 700; }
+.gedit input, .gedit textarea { min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; font: inherit; color: var(--ink); background: var(--paper); }
+.gedit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.gedit-actions .btn { min-height: 44px; padding: 0 18px; font-size: 14px; }
 .gcard.fresh { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(181,83,44,.18); }
 .gcard .thumb { height: 220px; background-size: cover; background-position: center; }
 .gcard .meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 8px 10px 16px; }
@@ -847,27 +853,91 @@ $('again').addEventListener('click', function () {
   $('styles').scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
 
-// Gallery (saved in this browser)
-function loadGallery() {
-  try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; }
+// Saved designs live in IndexedDB in this browser, with room for hundreds of full-size images.
+// If IndexedDB is blocked (private windows, some previews) they fall back to localStorage with thumbnails only.
+var DB_NAME = 'makeover';
+var DB_STORE = 'designs';
+var dbPromise = null;
+var useDb = true;
+var gallery = [];
+
+function openDb() {
+  if (!dbPromise) dbPromise = new Promise(function (resolve, reject) {
+    if (!window.indexedDB) return reject(new Error('IndexedDB is not available'));
+    var req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = function () { req.result.createObjectStore(DB_STORE, { keyPath: 'id' }); };
+    req.onsuccess = function () { resolve(req.result); };
+    req.onerror = function () { reject(req.error); };
+  });
+  return dbPromise;
 }
-function storeGallery(list) {
-  try { localStorage.setItem(KEY, JSON.stringify(list)); return true; } catch (e) { return false; }
+
+function dbRequest(mode, fn) {
+  return openDb().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var tx = db.transaction(DB_STORE, mode);
+      var req = fn(tx.objectStore(DB_STORE));
+      tx.oncomplete = function () { resolve(req.result); };
+      tx.onerror = tx.onabort = function () { reject(tx.error); };
+    });
+  });
 }
-var gallery = loadGallery().filter(function (g) { return styleById(g.style); });
+
+function lsWrite() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(gallery.map(function (g) { var c = Object.assign({}, g); delete c.img; return c; })));
+    return Promise.resolve();
+  } catch (e) { return Promise.reject(e); }
+}
+
+// Create / read / update / delete for saved designs
+var designs = {
+  all: function () {
+    if (useDb) return dbRequest('readonly', function (s) { return s.getAll(); })
+      .then(function (list) { return list.sort(function (a, b) { return b.id - a.id; }); });
+    try { return Promise.resolve(JSON.parse(localStorage.getItem(KEY)) || []); } catch (e) { return Promise.resolve([]); }
+  },
+  put: function (item) {
+    return useDb ? dbRequest('readwrite', function (s) { return s.put(item); }) : lsWrite();
+  },
+  remove: function (id) {
+    return useDb ? dbRequest('readwrite', function (s) { return s.delete(id); }) : lsWrite();
+  }
+};
+
+async function loadGallery() {
+  try {
+    await openDb();
+    // One-time move of designs saved before the switch to IndexedDB
+    var old = [];
+    try { old = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) {}
+    for (var i = 0; i < old.length; i++) await designs.put(old[i]);
+    if (old.length) { try { localStorage.removeItem(KEY); } catch (e) {} }
+  } catch (e) {
+    useDb = false;
+  }
+  try { gallery = (await designs.all()).filter(function (g) { return styleById(g.style); }); } catch (e) { gallery = []; }
+  renderGallery();
+}
 
 $('save').addEventListener('click', async function () {
   if (state.saved || !state.result) return;
+  var s = styleById(state.resultStyle);
+  var r = roomById(state.resultRoom);
   var item = {
     id: Date.now(), style: state.resultStyle, room: state.resultRoom, cost: state.cost,
+    name: s.name + ' ' + r.name.toLowerCase(), note: '',
     date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   };
-  try { item.thumb = await resizeImage(state.result, 720, 0.75); } catch (e) {}
+  try { item.thumb = await resizeImage(state.result, 720, 0.8); } catch (e) {}
+  if (useDb) item.img = state.result;
   gallery.unshift(item);
-  var full = !storeGallery(gallery);
-  if (full) {
-    delete item.thumb;
-    storeGallery(gallery);
+  try {
+    await designs.put(item);
+  } catch (e) {
+    gallery.shift();
+    alert('This design could not be saved because browser storage is full. Use Download to keep the picture, or delete older designs.');
+    return;
   }
   state.saved = true;
   refresh();
@@ -878,11 +948,34 @@ $('save').addEventListener('click', async function () {
     card.classList.add('fresh');
     setTimeout(function () { card.classList.remove('fresh'); }, 2500);
   }
-  if (full) alert('Your browser storage is full, so this design was saved without its image. Use Download to keep the picture, or delete older designs.');
 });
 
 var TRASH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4h6v3"/></svg>';
 var DOWN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg>';
+
+var EDIT = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>';
+var editingId = null;
+
+function editForm(g) {
+  var form = document.createElement('form');
+  form.className = 'gedit';
+  form.innerHTML =
+    '<label for="editName">Name</label><input id="editName" maxlength="60" autocomplete="off">' +
+    '<label for="editNote">Note</label><textarea id="editNote" rows="2" maxlength="300" placeholder="e.g. client liked the rug, check the sofa price"></textarea>' +
+    '<div class="gedit-actions"><button type="button" class="btn btn-soft cancel">Cancel</button><button type="submit" class="btn btn-accent">Save changes</button></div>';
+  form.querySelector('#editName').value = g.name || '';
+  form.querySelector('#editNote').value = g.note || '';
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    g.name = form.querySelector('#editName').value.trim() || g.name;
+    g.note = form.querySelector('#editNote').value.trim();
+    editingId = null;
+    designs.put(g).catch(function () { alert('Could not save the change. Please try again.'); });
+    renderGallery();
+  });
+  form.querySelector('.cancel').addEventListener('click', function () { editingId = null; renderGallery(); });
+  return form;
+}
 
 function renderGallery() {
   var grid = $('galleryGrid');
@@ -890,19 +983,54 @@ function renderGallery() {
   gallery.forEach(function (g) {
     var s = styleById(g.style);
     var room = g.room && roomById(g.room) ? roomById(g.room).name : '';
+    var label = s.name + (room ? ' · ' + room : '');
     var card = document.createElement('article');
     card.className = 'gcard';
-    card.innerHTML =
-      '<div class="thumb" style="background-image:url(' + (g.thumb || IMG(s.img, 720)) + ')"></div>' +
-      '<div class="meta"><div><strong>' + s.name + (room ? ' · ' + room : '') + '</strong><small>' + g.date + (g.cost ? ' · ' + costHtml(g.cost) : '') + '</small></div>' +
-      '<div style="display:flex">' +
-      (g.thumb ? '<a class="icon-btn" href="' + g.thumb + '" download="makeover-' + s.id + '.jpg" aria-label="Download ' + s.name + ' design">' + DOWN + '</a>' : '') +
-      '<button type="button" class="icon-btn del" aria-label="Delete ' + s.name + ' design">' + TRASH + '</button></div></div>';
-    card.querySelector('.del').addEventListener('click', function () {
+    var thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    thumb.style.backgroundImage = 'url(' + (g.thumb || IMG(s.img, 720)) + ')';
+    card.appendChild(thumb);
+
+    if (editingId === g.id) {
+      card.appendChild(editForm(g));
+      grid.appendChild(card);
+      return;
+    }
+
+    var meta = document.createElement('div');
+    meta.className = 'meta';
+    var info = document.createElement('div');
+    var title = document.createElement('strong');
+    title.textContent = g.name || label;
+    var sub = document.createElement('small');
+    sub.innerHTML = (g.name ? label + ' · ' : '') + g.date + (g.cost ? ' · ' + costHtml(g.cost) : '');
+    info.append(title, sub);
+    if (g.note) {
+      var note = document.createElement('p');
+      note.className = 'gnote';
+      note.textContent = g.note;
+      info.appendChild(note);
+    }
+    var tools = document.createElement('div');
+    tools.style.display = 'flex';
+    var file = g.img || g.thumb;
+    tools.innerHTML = (file ? '<a class="icon-btn dl" download="makeover-' + s.id + '.png" aria-label="Download this design">' + DOWN + '</a>' : '') +
+      '<button type="button" class="icon-btn edit" aria-label="Edit name and note">' + EDIT + '</button>' +
+      '<button type="button" class="icon-btn del" aria-label="Delete this design">' + TRASH + '</button>';
+    if (file) tools.querySelector('.dl').href = file;
+    tools.querySelector('.edit').addEventListener('click', function () {
+      editingId = g.id;
+      renderGallery();
+      $('editName').focus();
+    });
+    tools.querySelector('.del').addEventListener('click', function () {
+      if (!confirm('Delete this design?')) return;
       gallery = gallery.filter(function (h) { return h.id !== g.id; });
-      storeGallery(gallery);
+      designs.remove(g.id).catch(function () {});
       renderGallery();
     });
+    meta.append(info, tools);
+    card.appendChild(meta);
     grid.appendChild(card);
   });
   $('galleryEmpty').hidden = gallery.length > 0;
@@ -967,6 +1095,7 @@ function refresh() {
   renderGallery();
 }
 refresh();
+loadGallery();
 </script>
 </body>
 </html>
