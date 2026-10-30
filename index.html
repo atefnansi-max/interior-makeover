@@ -297,7 +297,16 @@ footer .logo { font-size: 24px; color: var(--ink); }
         </fieldset>
 
         <fieldset class="field">
-          <legend class="label"><i>5</i>Budget</legend>
+          <legend class="label"><i>5</i>Light &amp; mood</legend>
+          <div class="seg" id="mood">
+            <button type="button" data-v="day" aria-pressed="true">Daylight</button>
+            <button type="button" data-v="golden" aria-pressed="false">Golden hour</button>
+            <button type="button" data-v="evening" aria-pressed="false">Evening</button>
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend class="label"><i>6</i>Budget</legend>
           <div class="seg" id="budget">
             <button type="button" data-v="budget" aria-pressed="false">Affordable</button>
             <button type="button" data-v="mid" aria-pressed="true">Mid-range</button>
@@ -306,7 +315,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
         </fieldset>
 
         <fieldset class="field">
-          <legend class="label"><i>6</i>Keep these <small>optional</small></legend>
+          <legend class="label"><i>7</i>Keep these <small>optional</small></legend>
           <div class="chips" id="keepChips"></div>
           <label for="keep" class="tips">Anything else? Describe it.</label>
           <textarea id="keep" rows="2" placeholder="e.g. my grey sofa, the wooden dining table"></textarea>
@@ -399,10 +408,28 @@ footer .logo { font-size: 24px; color: var(--ink); }
 
 <script>
 var IMG = function (id, w) { return 'https://images.unsplash.com/photo-' + id + '?w=' + (w || 400) + '&q=65'; };
+// Space-planning brief per room type, with standard residential clearances
 var ROOMS = [
-  { id: 'living', name: 'Living room' }, { id: 'bedroom', name: 'Bedroom' }, { id: 'majlis', name: 'Majlis' },
-  { id: 'dining', name: 'Dining room' }, { id: 'kitchen', name: 'Kitchen' }, { id: 'office', name: 'Home office' }
+  { id: 'living', name: 'Living room',
+    plan: 'arrange the seating as one conversation group facing the focal point (TV wall, fireplace or window view); a 3-seater sofa about 185 to 220 cm wide; coffee table about 45 cm in front of the sofa, roughly two-thirds of its length and 30 to 45 cm high; a rug large enough that at least the front legs of all seating sit on it; TV unit 120 to 180 cm wide and low; side tables at arm height; keep the main walkway at least 90 cm clear; layer ambient light, a reading lamp by the seating and accent light on art or shelving' },
+  { id: 'bedroom', name: 'Bedroom',
+    plan: 'make the bed the focal point with its headboard on a solid wall, ideally in view of the door; a double bed about 160 x 200 cm or king about 180 x 200 cm; night tables 35 to 50 cm wide on both sides at mattress height; at least 60 cm of passage beside the bed and about 100 cm at the foot or dressing side; wardrobe about 60 cm deep with room for its doors to open; calm, low-glare lighting with bedside lamps or wall reading lights and soft ambient light; sheer plus blackout curtains' },
+  { id: 'majlis', name: 'Majlis',
+    plan: 'perimeter seating along the walls in a U or L shape, facing inward for conversation and hospitality; low, wide seats about 70 to 90 cm deep with back cushions and bolsters; a central low table or tray tables within easy reach, about 45 cm from the seats; a large rug defining the centre; keep the entrance and a central circulation zone of at least 90 cm open; a feature wall opposite the entrance; space for serving coffee; warm, dimmable ambient light with wall accents' },
+  { id: 'dining', name: 'Dining room',
+    plan: 'centre the table in the room and under the main pendant; allow 60 to 75 cm of table length per person, for six people about 180 to 200 x 90 to 100 cm, 75 cm high; at least 90 cm between the table edge and walls or furniture so chairs can pull out and people can pass; pendant hung about 75 to 85 cm above the tabletop; a sideboard about 160 to 180 cm wide and 40 to 50 cm deep against a wall' },
+  { id: 'kitchen', name: 'Kitchen',
+    plan: 'keep the sink, hob and appliance positions where they are now so the plumbing stays realistic; a clear work triangle between sink, hob and fridge; worktops about 90 cm high and 60 cm deep; wall units about 35 cm deep starting 50 to 60 cm above the worktop; at least 120 cm (ideally 150 cm) between facing runs or an island; integrated appliances, a practical backsplash, under-cabinet task lighting and pendants over any island' },
+  { id: 'office', name: 'Home office',
+    plan: 'place the desk, about 140 to 160 cm wide, 70 to 80 cm deep and 75 cm high, beside or facing the window for daylight without glare on the screen; an ergonomic chair with about 90 to 100 cm clear behind it; shelving or storage 30 to 40 cm deep; tidy surfaces with hidden cables; a task lamp plus ambient light; a small reading chair if space allows' }
 ];
+
+// Photo look: realistic editorial by default, golden hour and evening as moods
+var MOODS = {
+  day: 'Natural daylight look: soft daylight from the existing windows with gentle falloff into the room, neutral true-to-life white balance, balanced exposure with detail in highlights and shadows',
+  golden: 'Golden hour look: warm, low late-afternoon sun coming through the existing windows, long soft shadows across floor and furniture, warm glow, still with detail in shadows and true material colors',
+  evening: 'Evening cinematic look: dusk or night outside the windows, all interior lights on in warm layers (lamps, pendants, cove and accent light), gentle cinematic contrast and subtle color grade, pools of light and soft shadows, still photoreal'
+};
 // Each style is written as a designer's brief: concept, palette, materials, signature pieces, lighting layers, styling
 var STYLES = [
   { id: 'modern', name: 'Modern', img: '1586023492125-27b2c045efd7',
@@ -459,7 +486,7 @@ var KEEP_ITEMS = ['Sofa', 'Rug', 'Bed', 'Dining table', 'Curtains', 'Plants', 'A
 var KEY = 'makeover-gallery';
 var KEY_STORE = 'makeover-gemini-key';
 var MODEL = 'gemini-2.5-flash-image';
-var state = { photo: '', room: 'living', style: '', intensity: 'full', budget: 'mid', keep: [], result: '', notes: [], versions: [], vIndex: 0, resultStyle: '', saved: false };
+var state = { photo: '', room: 'living', style: '', intensity: 'full', budget: 'mid', mood: 'day', keep: [], result: '', notes: [], versions: [], vIndex: 0, resultStyle: '', saved: false };
 var $ = function (id) { return document.getElementById(id); };
 var styleById = function (id) { return STYLES.find(function (s) { return s.id === id; }); };
 var roomById = function (id) { return ROOMS.find(function (r) { return r.id === id; }); };
@@ -504,6 +531,9 @@ document.querySelectorAll('#intensity button').forEach(function (b) {
 });
 document.querySelectorAll('#budget button').forEach(function (b) {
   b.addEventListener('click', function () { state.budget = b.dataset.v; refresh(); });
+});
+document.querySelectorAll('#mood button').forEach(function (b) {
+  b.addEventListener('click', function () { state.mood = b.dataset.v; refresh(); });
 });
 
 // Upload
@@ -611,10 +641,13 @@ function buildPrompt() {
   lines.push('- Palette: ' + s.palette + '.');
   lines.push('- Materials and finishes: ' + s.materials + '.');
   lines.push('- Key pieces: ' + s.pieces + '.');
-  lines.push('- Lighting in layers: ' + s.lighting + '. Daylight keeps coming from the existing windows in the same direction, with realistic soft shadows.');
+  lines.push('- Lighting in layers: ' + s.lighting + '.');
   lines.push('- Styling: ' + s.styling + '.');
+  var r = roomById(state.room);
+  lines.push('SPACE PLANNING for a ' + room + ' (' + (state.intensity === 'light' ? 'keep the current layout; use these as a check only' : 'apply these to the new layout') + '): ' + r.plan + '. Keep everything in true real-world scale relative to the doors, windows and ceiling height.');
   lines.push('Compose one clear focal point, a balanced rhythm of heights, and a mix of textures (matte, soft, natural, a touch of metal) so the room feels layered and lived-in, not staged.');
-  lines.push('OUTPUT: one photorealistic interior photograph in editorial architectural photography quality, true-to-life textures, same aspect ratio as the input photo.');
+  lines.push('PHOTOGRAPHY: ' + MOODS[state.mood] + '.');
+  lines.push('OUTPUT: one photorealistic editorial interior photograph in the style of a high-end design magazine, same camera position, lens and framing as the input, vertical lines kept straight as with a tilt-shift lens, crisp focus across the room, subtle ambient occlusion in corners, physically accurate materials with visible wood grain, fabric weave and stone veining, natural reflections on glass and metal, no CGI or plastic look, same aspect ratio as the input photo.');
   lines.push('Also reply with a short designer note in exactly this format:\nConcept: <one line>\nPalette: <3 to 5 colors>\nMaterials: <key materials>\nStatement piece: <one item>\nLighting: <one line>\nBudget tip: <one practical way this design fits the budget>\nCost level: <exactly one of $, $$, $$$, $$$$, $$$$$ for the relative cost to furnish and finish the room as shown, where $ is very low cost and $$$$$ is high-end luxury>');
   lines.push('No people, no text inside the image, no watermarks, no extra or moved windows and doors.');
   return lines.join('\n');
@@ -869,6 +902,7 @@ function refresh() {
   pressAll('#keepChips .chip', function (b) { return state.keep.indexOf(b.dataset.id) >= 0; });
   pressAll('#intensity button', function (b) { return b.dataset.v === state.intensity; });
   pressAll('#budget button', function (b) { return b.dataset.v === state.budget; });
+  pressAll('#mood button', function (b) { return b.dataset.v === state.mood; });
 
   $('dropArea').hidden = !!state.photo;
   $('previewArea').hidden = !state.photo;
