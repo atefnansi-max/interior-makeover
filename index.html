@@ -622,7 +622,13 @@ function buildPrompt() {
 var FALLBACK_MODEL = 'gemini-2.0-flash-preview-image-generation';
 async function callGemini(photo, prompt) {
   try {
-    return await callModel(MODEL, photo, prompt);
+    try {
+      return await callModel(MODEL, photo, prompt);
+    } catch (first) {
+      // Gemini sometimes answers with text only; ask once more, insisting on the image
+      if (!first.noImage) throw first;
+      return await callModel(MODEL, photo, prompt + '\nIMPORTANT: you must return the edited image, not only text.');
+    }
   } catch (e) {
     if (!e.noQuota) throw e;
     try { return await callModel(FALLBACK_MODEL, photo, prompt); } catch (e2) { throw e; }
@@ -653,7 +659,11 @@ async function callModel(model, photo, prompt) {
   if (!res.ok) throw new Error(msg || 'Gemini returned an error (' + res.status + ').');
   var parts = (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts) || [];
   var part = parts.find(function (p) { return p.inlineData || p.inline_data; });
-  if (!part) throw new Error('Gemini did not return an image. Try again, or try another style.');
+  if (!part) {
+    var noImg = new Error('Gemini did not return an image this time. Press the button again, or reword the change.');
+    noImg.noImage = true;
+    throw noImg;
+  }
   var d = part.inlineData || part.inline_data;
   var text = parts.map(function (p) { return p.text || ''; }).join('\n');
   return { img: 'data:' + (d.mimeType || d.mime_type || 'image/png') + ';base64,' + d.data, notes: parseNotes(text) };
