@@ -872,7 +872,9 @@ async function callModel(model, photo, prompt, size) {
     throw na;
   }
   if (/limit: 0/.test(msg)) {
-    var err = new Error('Image generation is not included in the free Gemini tier. In Google AI Studio, open API Keys and click "Set up billing" next to your key, then try again.');
+    var err = new Error(getKey()
+      ? 'Image generation is not included in the free Gemini tier. In Google AI Studio, open API Keys and click "Set up billing" next to your key, then try again.'
+      : 'Free designs are not available right now. Please try again later, or add your own Gemini key in the studio.');
     err.noQuota = true;
     throw err;
   }
