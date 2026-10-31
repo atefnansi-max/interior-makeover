@@ -130,7 +130,8 @@ nav .btn { min-height: 44px; padding: 0 20px; font-size: 15px; }
 .tab.done b { background: var(--sage); border-color: var(--sage); color: var(--ink); }
 .panel { padding: 22px; border: 1.5px solid var(--line); border-radius: 22px; background: var(--paper); }
 .panel { display: flex; flex-direction: column; gap: 26px; }
-.panel .next { align-self: flex-end; min-height: 46px; padding: 0 22px; font-size: 15px; }
+.panel-title { margin: 0; display: flex; align-items: center; gap: 12px; font-family: var(--serif); font-size: 32px; font-weight: 400; line-height: 1; }
+.panel-title b { width: 34px; height: 34px; border-radius: 999px; background: var(--ink); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; }
 .summary { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .summary span { padding: 4px 10px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); font-size: 13px; font-weight: 600; }
 .summary span.missing { border-style: dashed; color: var(--muted); font-weight: 500; }
@@ -319,13 +320,8 @@ footer .logo { font-size: 24px; color: var(--ink); }
       </div>
 
       <div class="controls">
-        <div class="tabs" role="tablist" aria-label="Design choices">
-          <button type="button" class="tab" role="tab" id="tab-0" aria-controls="panel-0" data-tab="0"><b>2</b><span><strong>Room</strong><small id="tabSub0"></small></span></button>
-          <button type="button" class="tab" role="tab" id="tab-1" aria-controls="panel-1" data-tab="1"><b>3</b><span><strong>Style</strong><small id="tabSub1"></small></span></button>
-          <button type="button" class="tab" role="tab" id="tab-2" aria-controls="panel-2" data-tab="2"><b>4</b><span><strong>Details</strong><small id="tabSub2"></small></span></button>
-        </div>
-
-        <div class="panel" role="tabpanel" id="panel-0" aria-labelledby="tab-0">
+        <section class="panel" id="panel-0" aria-labelledby="h-room">
+          <h3 class="panel-title" id="h-room"><b>2</b>Room</h3>
           <fieldset class="field">
             <legend class="label">Room type</legend>
             <div class="chips" id="rooms"></div>
@@ -338,10 +334,10 @@ footer .logo { font-size: 24px; color: var(--ink); }
               <button type="button" data-v="bold" aria-pressed="false">Bold &amp; creative</button>
             </div>
           </fieldset>
-          <button type="button" class="btn btn-line next" data-next="1">Next: style</button>
-        </div>
+        </section>
 
-        <div class="panel" role="tabpanel" id="panel-1" aria-labelledby="tab-1" hidden>
+        <section class="panel" id="panel-1" aria-labelledby="h-style">
+          <h3 class="panel-title" id="h-style"><b>3</b>Style</h3>
           <fieldset class="field">
             <legend class="label">Style</legend>
             <div class="styles" id="styles"></div>
@@ -354,10 +350,10 @@ footer .logo { font-size: 24px; color: var(--ink); }
               <button type="button" data-v="evening" aria-pressed="false">Evening</button>
             </div>
           </fieldset>
-          <button type="button" class="btn btn-line next" data-next="2">Next: details</button>
-        </div>
+        </section>
 
-        <div class="panel" role="tabpanel" id="panel-2" aria-labelledby="tab-2" hidden>
+        <section class="panel" id="panel-2" aria-labelledby="h-details">
+          <h3 class="panel-title" id="h-details"><b>4</b>Details</h3>
           <fieldset class="field">
             <legend class="label">Budget</legend>
             <div class="seg" id="budget">
@@ -372,7 +368,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
             <label for="keep" class="tips">Anything else? Describe it.</label>
             <textarea id="keep" rows="2" placeholder="e.g. my grey sofa, the wooden dining table"></textarea>
           </fieldset>
-        </div>
+        </section>
 
         <div class="go">
           <p class="summary" id="summary"></p>
@@ -615,19 +611,6 @@ document.querySelectorAll('#budget button').forEach(function (b) {
 document.querySelectorAll('#mood button').forEach(function (b) {
   b.addEventListener('click', function () { state.mood = b.dataset.v; refresh(); });
 });
-// Tabs: Room, Style, Details
-function openTab(i) {
-  state.tab = i;
-  refresh();
-  var t = $('tab-' + i);
-  if (t.getBoundingClientRect().top < 80) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-document.querySelectorAll('.tab').forEach(function (b) {
-  b.addEventListener('click', function () { openTab(Number(b.dataset.tab)); });
-});
-document.querySelectorAll('.next').forEach(function (b) {
-  b.addEventListener('click', function () { openTab(Number(b.dataset.next)); });
-});
 var INTENSITY_NAMES = { light: 'Light refresh', full: 'Full makeover', bold: 'Bold & creative' };
 var MOOD_NAMES = { day: 'Daylight', golden: 'Golden hour', evening: 'Evening' };
 var BUDGET_NAMES = { budget: 'Affordable', mid: 'Mid-range', luxury: 'Luxury' };
@@ -653,10 +636,6 @@ function renderSummary() {
     if (it.missing) span.className = 'missing';
     box.appendChild(span);
   });
-  $('tabSub0').textContent = roomById(state.room).name + ' · ' + INTENSITY_NAMES[state.intensity];
-  $('tabSub1').textContent = (s ? s.name : 'Not picked') + ' · ' + MOOD_NAMES[state.mood];
-  $('tabSub2').textContent = BUDGET_NAMES[state.budget] + (keep.length ? ' · keep ' + keep.length : '');
-  $('tab-1').classList.toggle('done', !!s && state.tab !== 1);
 }
 $('keep').addEventListener('input', renderSummary);
 
@@ -1133,9 +1112,7 @@ function setSlider(v) {
 $('slider').addEventListener('input', function (e) { setSlider(Number(e.target.value)); });
 
 $('again').addEventListener('click', function () {
-  state.tab = 1;
-  refresh();
-  $('tab-1').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('panel-1').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 // Saved designs live in IndexedDB in this browser, with room for hundreds of full-size images.
@@ -1346,12 +1323,6 @@ function refresh() {
   pressAll('#budget button', function (b) { return b.dataset.v === state.budget; });
   pressAll('#mood button', function (b) { return b.dataset.v === state.mood; });
   pressAll('#quality button', function (b) { return b.dataset.v === state.quality; });
-  document.querySelectorAll('.tab').forEach(function (b) {
-    var on = Number(b.dataset.tab) === state.tab;
-    b.setAttribute('aria-selected', String(on));
-    b.tabIndex = on ? 0 : -1;
-    $('panel-' + b.dataset.tab).hidden = !on;
-  });
   renderSummary();
 
   $('dropArea').hidden = !!state.photo;
@@ -1368,7 +1339,7 @@ function refresh() {
   $('keyState').textContent = !hasKey ? '(optional)' : keyLooksWrong ? '(this does not look like an API key: click Show to check it)' : keyStored ? '(saved, used instead of the free designs)' : '(this visit only)';
   var freeNote = hasKey ? '' : freeLeft === null ? ' · free, no key needed' : freeLeft > 0 ? ' · ' + freeLeft + ' free designs left today' : ' · free designs used up today';
   $('hint').textContent = !state.photo ? 'Upload a photo to start'
-    : !state.style ? 'Now pick a style in the Style tab'
+    : !state.style ? 'Now pick a style'
     : (state.quality === 'hd' ? 'HD takes about 1 to 2 minutes' : 'Takes about 20 to 40 seconds') + freeNote;
 
   var has = !!state.result;
