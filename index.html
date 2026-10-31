@@ -257,6 +257,13 @@ nav a, nav button { white-space: nowrap; }
 .token-pill { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 700; cursor: pointer; }
 .token-pill i { color: #D9A13E; }
 .token-pill.low { border-color: var(--accent); color: var(--accent); }
+.token-pill { position: relative; }
+.token-pill.own i { color: var(--muted); }
+.token-pill.spent { animation: spent-pulse 1.2s ease; }
+@keyframes spent-pulse { 0% { border-color: var(--accent); box-shadow: 0 0 0 0 rgba(122,15,36,.35); } 60% { box-shadow: 0 0 0 8px rgba(122,15,36,0); } 100% { border-color: var(--line); } }
+.spent-tag { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 4px; padding: 2px 10px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; white-space: nowrap; pointer-events: none; animation: spent-float 1.8s ease forwards; }
+@keyframes spent-float { 0% { opacity: 0; transform: translate(-50%, -6px); } 15% { opacity: 1; transform: translate(-50%, 0); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, 10px); } }
+@media (prefers-reduced-motion: reduce) { .token-pill.spent, .spent-tag { animation: none; } }
 .auth-btn { min-height: 40px !important; padding: 0 16px !important; font-size: 14px !important; gap: 8px; }
 .auth-btn img { width: 26px; height: 26px; border-radius: 999px; object-fit: cover; margin-left: -8px; }
 .gcard .thumb { position: relative; }
@@ -377,6 +384,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
       <a class="nl" href="#how">How it works</a>
       <a class="nl" href="#gallery">My designs</a>
       <button type="button" class="token-pill" id="tokenPill" hidden aria-label="Your tokens"><i class="fa-solid fa-coins" aria-hidden="true"></i><span id="tokenCount"></span></button>
+      <span class="sr" id="tokenLive" role="status" aria-live="polite"></span>
       <button type="button" class="btn btn-soft auth-btn" id="authBtn" hidden><i class="fa-brands fa-google" aria-hidden="true"></i><span>Sign in</span></button>
       <a class="btn btn-accent" href="#tool">Start designing</a>
     </nav>
@@ -1078,7 +1086,12 @@ async function callModel(model, photo, prompt, size) {
   var json = await res.json().catch(function () { return {}; });
   var msg = (json.error && json.error.message) || '';
   var left = res.headers.get('X-Tokens-Left');
-  if (left !== null && me) { me.tokens = Number(left); refresh(); }
+  if (left !== null && me) {
+    var before = me.tokens;
+    me.tokens = Number(left);
+    refresh();
+    if (me.tokens < before) showSpent(before - me.tokens);
+  }
   if (json.needTokens) {
     if (me) me.tokens = json.tokens || 0;
     refresh();
@@ -1730,14 +1743,30 @@ function renderGallery() {
 // ---------- Account: token balance, Sign in, dashboard header ----------
 function signedIn() { return !!(me && me.type === 'user'); }
 function tokenText(n) { return n + (n === 1 ? ' token' : ' tokens'); }
+// Make each deduction visible: a "−10" floats off the balance in the header
+function showSpent(n) {
+  var pill = $('tokenPill');
+  var tag = document.createElement('span');
+  tag.className = 'spent-tag';
+  tag.textContent = '−' + n;
+  pill.appendChild(tag);
+  pill.classList.remove('spent');
+  void pill.offsetWidth;
+  pill.classList.add('spent');
+  $('tokenLive').textContent = n + ' tokens used. ' + tokenText(me.tokens) + ' left.';
+  setTimeout(function () { tag.remove(); pill.classList.remove('spent'); }, 1800);
+}
 function renderAccount() {
   var own = !!getKey();
-  $('tokenPill').hidden = !me || own;
+  $('tokenPill').hidden = !me;
   $('authBtn').hidden = !me;
   if (!me) return;
-  $('tokenCount').textContent = tokenText(me.tokens);
-  $('tokenPill').classList.toggle('low', me.tokens < TOKENS_PER_IMAGE);
-  $('tokenPill').title = Math.floor(me.tokens / TOKENS_PER_IMAGE) + ' designs left · 10 tokens per design';
+  // With the visitor's own Gemini key, designs are paid by that key and tokens are not used
+  $('tokenPill').classList.toggle('own', own);
+  $('tokenPill').querySelector('i').className = own ? 'fa-solid fa-key' : 'fa-solid fa-coins';
+  $('tokenCount').textContent = own ? 'Own key' : tokenText(me.tokens);
+  $('tokenPill').classList.toggle('low', !own && me.tokens < TOKENS_PER_IMAGE);
+  $('tokenPill').title = own ? 'Using your own Gemini key from Settings: tokens are not used' : Math.floor(me.tokens / TOKENS_PER_IMAGE) + ' designs left · 10 tokens per design';
   if (signedIn()) {
     var first = (me.name || me.email || 'there').split(' ')[0];
     $('authBtn').innerHTML = (me.picture ? '<img src="" alt="">' : '<i class="fa-solid fa-circle-user" aria-hidden="true"></i>') + '<span></span>';
@@ -1751,9 +1780,8 @@ function renderAccount() {
     $('authBtn').setAttribute('aria-label', 'Sign in');
     $('galleryTitle').innerHTML = 'My <em>designs</em>';
   }
-  $('dashTokens').hidden = own;
   $('dashTokens').innerHTML = '<i class="fa-solid fa-coins" aria-hidden="true"></i><span></span>';
-  $('dashTokens').querySelector('span').textContent = tokenText(me.tokens) + ' left · ' + Math.floor(me.tokens / TOKENS_PER_IMAGE) + ' designs';
+  $('dashTokens').querySelector('span').textContent = tokenText(me.tokens) + ' left · ' + Math.floor(me.tokens / TOKENS_PER_IMAGE) + ' designs' + (own ? ' (not used while your own key is on)' : '');
   $('signOut').hidden = !signedIn();
 }
 
@@ -1871,7 +1899,7 @@ function refresh() {
   $('generate').classList.toggle('not-ready', !ready);
   $('generate').setAttribute('aria-disabled', String(!ready));
   $('keyState').textContent = !hasKey ? '(optional)' : keyLooksWrong ? '(this does not look like an API key: click Show to check it)' : keyStored ? '(saved, used instead of the free designs)' : '(this visit only)';
-  var freeNote = hasKey || !me ? '' : ' · 10 tokens per design, ' + tokenText(me.tokens) + ' left';
+  var freeNote = hasKey ? ' · using your own key, no tokens used' : !me ? '' : ' · 10 tokens per design, ' + tokenText(me.tokens) + ' left';
   $('hint').textContent = !state.photo ? 'Upload a photo to start'
     : !state.style ? 'Now pick a style'
     : (state.quality === 'hd' ? 'HD takes about 1 to 2 minutes' : 'Takes about 20 to 40 seconds') + freeNote;
