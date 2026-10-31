@@ -600,6 +600,15 @@ export async function buildRoom(container, rawSpec, opts = {}) {
 
   return {
     resetView() { home(); dirty = true; },
+    // Slow turntable spin, for presenting the room
+    setAutoRotate(on, speed = 1.5) { controls.autoRotate = !!on; controls.autoRotateSpeed = speed; dirty = true; },
+    // factor < 1 moves the camera toward the room, > 1 away from it
+    zoom(factor) {
+      const offset = camera.position.clone().sub(controls.target).multiplyScalar(factor);
+      if (offset.length() < controls.minDistance || offset.length() > controls.maxDistance) return;
+      camera.position.copy(controls.target).add(offset);
+      dirty = true;
+    },
     dispose() {
       renderer.setAnimationLoop(null);
       ro.disconnect();
