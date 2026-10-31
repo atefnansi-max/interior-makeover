@@ -236,6 +236,18 @@ footer .logo { font-size: 24px; color: var(--ink); }
   .photo-col { position: sticky; top: 92px; }
   .float.one { left: -24px; }
 }
+/* Desktop: photo, Generate and all options share one screen; each column scrolls on its own */
+@media (min-width: 900px) {
+  .tool { flex-wrap: nowrap; height: calc(100vh - 96px); min-height: 560px; scroll-margin-top: 80px; }
+  .photo-col, .controls { height: 100%; overflow-y: auto; overscroll-behavior: contain; padding-right: 6px; }
+  .photo-col { position: static; flex: 1 1 46%; }
+  .controls { flex: 1 1 54%; gap: 18px; }
+  .drop, .preview { height: clamp(220px, 36vh, 400px); }
+  .photo-col .go { padding: 16px; gap: 10px; }
+  .photo-col .go .btn, .photo-col .loading { min-height: 54px; }
+  .panel { padding: 18px 20px; gap: 18px; }
+  .style img { height: 80px; }
+}
 @media (max-width: 600px) {
   .drop, .preview { height: 300px; }
   .float.one { left: 12px; bottom: 12px; }
@@ -250,7 +262,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
     <nav>
       <a class="nl" href="#how">How it works</a>
       <a class="nl" href="#gallery">My designs</a>
-      <a class="btn btn-accent" href="#studio">Start designing</a>
+      <a class="btn btn-accent" href="#tool">Start designing</a>
     </nav>
   </div>
 </header>
@@ -261,7 +273,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
     <h1 class="serif">Love your room <em>again.</em></h1>
     <p class="lead">Take one photo, choose a style, and keep the pieces you love. See your space redesigned in about 20 seconds.</p>
     <div class="ctas">
-      <a class="btn btn-accent" href="#studio">Redesign my room
+      <a class="btn btn-accent" href="#tool">Redesign my room
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       <a class="btn btn-line" href="#how">How it works</a>
     </div>
@@ -299,7 +311,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
       <p>Everything happens here, on one screen. Change any choice and generate again.</p>
     </div>
 
-    <div class="tool">
+    <div class="tool" id="tool">
       <div class="photo-col">
         <span class="label"><i>1</i>Your room photo</span>
         <div id="dropArea">
@@ -317,6 +329,32 @@ footer .logo { font-size: 24px; color: var(--ink); }
           </div>
         </div>
         <p class="tips">Tip: stand in a corner and shoot the whole room in daylight for the best result.</p>
+        <div class="go">
+          <p class="summary" id="summary"></p>
+          <div class="seg seg-2" id="quality" role="group" aria-label="Image quality">
+            <button type="button" data-v="fast" aria-pressed="true">Fast · about 20–40 s</button>
+            <button type="button" data-v="hd" aria-pressed="false">HD 2K · about 1–2 min</button>
+          </div>
+          <button type="button" class="btn btn-accent" id="generate" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+            Generate my design</button>
+          <div class="loading" id="loading" role="status" hidden>
+            <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
+            <span>Designing your room... <span class="timer"></span></span>
+          </div>
+          <p class="hint" id="hint">Upload a photo to start</p>
+          <p class="error" id="error" role="alert" hidden></p>
+          <details id="keyBox">
+            <summary>Your own Gemini API key <span id="keyState" class="tips">(optional)</span></summary>
+            <div class="keyrow">
+              <input type="text" id="apiKey" name="gemini-key-field" class="masked" placeholder="Paste your Gemini API key" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore aria-label="Gemini API key">
+              <button type="button" class="btn btn-soft" id="showKey" style="min-height:46px;padding:0 18px;font-size:14px" aria-pressed="false">Show</button>
+              <button type="button" class="btn btn-soft" id="clearKey" style="min-height:46px;padding:0 18px;font-size:14px">Clear</button>
+              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a key</a>
+            </div>
+            <p class="keynote">Not needed: leave it empty to use the free designs (a daily limit applies). If you add your own key, it's saved only in this browser and you pay Google directly, usually a few cents per image.</p>
+          </details>
+        </div>
       </div>
 
       <div class="controls">
@@ -370,32 +408,6 @@ footer .logo { font-size: 24px; color: var(--ink); }
           </fieldset>
         </section>
 
-        <div class="go">
-          <p class="summary" id="summary"></p>
-          <div class="seg seg-2" id="quality" role="group" aria-label="Image quality">
-            <button type="button" data-v="fast" aria-pressed="true">Fast · about 20–40 s</button>
-            <button type="button" data-v="hd" aria-pressed="false">HD 2K · about 1–2 min</button>
-          </div>
-          <button type="button" class="btn btn-accent" id="generate" disabled>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
-            Generate my design</button>
-          <div class="loading" id="loading" role="status" hidden>
-            <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
-            <span>Designing your room... <span class="timer"></span></span>
-          </div>
-          <p class="hint" id="hint">Upload a photo to start</p>
-          <p class="error" id="error" role="alert" hidden></p>
-          <details id="keyBox">
-            <summary>Your own Gemini API key <span id="keyState" class="tips">(optional)</span></summary>
-            <div class="keyrow">
-              <input type="text" id="apiKey" name="gemini-key-field" class="masked" placeholder="Paste your Gemini API key" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore aria-label="Gemini API key">
-              <button type="button" class="btn btn-soft" id="showKey" style="min-height:46px;padding:0 18px;font-size:14px" aria-pressed="false">Show</button>
-              <button type="button" class="btn btn-soft" id="clearKey" style="min-height:46px;padding:0 18px;font-size:14px">Clear</button>
-              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a key</a>
-            </div>
-            <p class="keynote">Not needed: leave it empty to use the free designs (a daily limit applies). If you add your own key, it's saved only in this browser and you pay Google directly, usually a few cents per image.</p>
-          </details>
-        </div>
       </div>
     </div>
   </div>
