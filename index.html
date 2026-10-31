@@ -2224,7 +2224,8 @@ setInterval(function () {
   document.querySelectorAll('.loading').forEach(function (l) {
     var t = l.querySelector('.timer');
     if (!t) return;
-    if (l.hidden) { delete l.dataset.start; t.textContent = ''; return; }
+    // Hidden itself or inside a hidden overlay: reset, so the count starts at 0 when it appears
+    if (l.hidden || !l.offsetParent) { delete l.dataset.start; t.textContent = ''; return; }
     if (!l.dataset.start) l.dataset.start = Date.now();
     t.textContent = Math.round((Date.now() - Number(l.dataset.start)) / 1000) + 's';
   });
