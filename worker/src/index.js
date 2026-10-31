@@ -4,7 +4,7 @@
 // - /designs: generated and saved designs (D1 for details, KV for full images), owned by a guest or a Google account.
 
 // The text model only reads a room's layout for the 3D view; it returns no image, so it costs no tokens
-const TEXT_MODEL = 'gemini-2.5-flash';
+const TEXT_MODEL = 'gemini-3.8-flash';
 const ALLOWED_MODELS = ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', TEXT_MODEL];
 const MAX_BODY_BYTES = 12 * 1024 * 1024;
 const TOKENS_PER_IMAGE = 10;
