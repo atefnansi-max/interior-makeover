@@ -246,6 +246,36 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .icon-btn { width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; background: transparent; color: var(--muted); text-decoration: none; }
 .icon-btn:hover { background: var(--ground); color: var(--ink); }
 
+/* Tokens, sign-in and dashboard */
+.token-pill { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 700; cursor: pointer; }
+.token-pill i { color: #C08A2E; }
+.token-pill.low { border-color: var(--accent); color: var(--accent); }
+.auth-btn { min-height: 40px !important; padding: 0 16px !important; font-size: 14px !important; gap: 8px; }
+.auth-btn img { width: 26px; height: 26px; border-radius: 999px; object-fit: cover; margin-left: -8px; }
+.gcard .thumb { position: relative; }
+.heart { position: absolute; right: 12px; bottom: 12px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; background: rgba(255,255,255,.94); color: var(--ink); font-size: 18px; box-shadow: 0 4px 14px rgba(36,33,29,.18); cursor: pointer; transition: transform .15s; }
+.heart:hover { transform: scale(1.08); }
+.heart.on { color: #E0245E; }
+.dash-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.dash-row .btn { min-height: 40px; padding: 0 16px; font-size: 14px; }
+.dash-tokens { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; }
+.dash-tokens i { color: #C08A2E; }
+.gallery-filter { width: 240px; max-width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.choice-list { display: flex; flex-direction: column; gap: 10px; }
+.choice { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); color: var(--ink); text-align: left; font: inherit; cursor: pointer; }
+.choice:hover { border-color: var(--accent); }
+.choice i { width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: #FDF3EE; color: var(--accent); font-size: 17px; }
+.choice strong { display: block; font-size: 16px; }
+.choice small { color: var(--muted); font-size: 13px; }
+.dialog-lead { margin: 0; color: var(--muted); }
+.gsi-box { display: flex; justify-content: center; min-height: 44px; }
+@media (max-width: 600px) {
+  nav { gap: 8px; }
+  nav > .btn-accent { display: none; }
+  .auth-btn span { display: none; }
+  .auth-btn img { margin-left: 0; }
+}
+
 footer { border-top: 1px solid var(--line); }
 footer .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 28px; padding-bottom: 36px; font-size: 14px; color: var(--muted); }
 footer .logo { font-size: 24px; color: var(--ink); }
@@ -339,6 +369,8 @@ footer .logo { font-size: 24px; color: var(--ink); }
     <nav>
       <a class="nl" href="#how">How it works</a>
       <a class="nl" href="#gallery">My designs</a>
+      <button type="button" class="token-pill" id="tokenPill" hidden aria-label="Your tokens"><i class="fa-solid fa-coins" aria-hidden="true"></i><span id="tokenCount"></span></button>
+      <button type="button" class="btn btn-soft auth-btn" id="authBtn" hidden><i class="fa-brands fa-google" aria-hidden="true"></i><span>Sign in</span></button>
       <a class="btn btn-accent" href="#tool">Start designing</a>
     </nav>
   </div>
@@ -553,6 +585,44 @@ footer .logo { font-size: 24px; color: var(--ink); }
   </form>
 </dialog>
 
+<dialog class="settings-dialog" id="tokensDialog" aria-labelledby="tokensTitle">
+  <form method="dialog" class="settings-form">
+    <div class="dialog-head">
+      <h3 class="serif" id="tokensTitle">You're out of tokens</h3>
+      <button type="submit" class="icon-btn" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <p class="dialog-lead" id="tokensLead"></p>
+    <div class="choice-list">
+      <button type="button" class="choice" id="choosePlan"><i class="fa-solid fa-crown" aria-hidden="true"></i><span><strong>Purchase a plan</strong><small>More designs every month</small></span></button>
+      <button type="button" class="choice" id="chooseSignIn"><i class="fa-brands fa-google" aria-hidden="true"></i><span><strong>Get 5 more free designs</strong><small>Sign in or sign up with Google: 50 more tokens</small></span></button>
+    </div>
+    <p class="keynote">Each design costs 10 tokens, and tokens are only used when a design is ready. You can also add your own Gemini key in Settings.</p>
+  </form>
+</dialog>
+
+<dialog class="settings-dialog" id="plansDialog" aria-labelledby="plansTitle">
+  <form method="dialog" class="settings-form">
+    <div class="dialog-head">
+      <h3 class="serif" id="plansTitle">Plans</h3>
+      <button type="submit" class="icon-btn" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <p class="dialog-lead">Paid plans with more designs each month are coming soon. Until then, sign in with Google for 5 more free designs, or add your own Gemini key in Settings.</p>
+    <button type="submit" class="btn btn-accent">Got it</button>
+  </form>
+</dialog>
+
+<dialog class="settings-dialog" id="signinDialog" aria-labelledby="signinTitle">
+  <form method="dialog" class="settings-form">
+    <div class="dialog-head">
+      <h3 class="serif" id="signinTitle">Sign in to <em>Makeover</em></h3>
+      <button type="submit" class="icon-btn" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <p class="dialog-lead">Get 50 more tokens (5 free designs) and keep your designs on every device. The designs you made as a guest move to your account.</p>
+    <div class="gsi-box" id="gsiBtn"></div>
+    <p class="error" id="signinError" role="alert" hidden></p>
+  </form>
+</dialog>
+
 <section id="result" class="wrap result">
   <div class="head">
     <h2 class="serif">Refine <em>&amp;</em> explore</h2>
@@ -597,13 +667,21 @@ footer .logo { font-size: 24px; color: var(--ink); }
 
 <section id="gallery" class="wrap gallery-sec">
   <div class="head">
-    <h2 class="serif">My <em>designs</em></h2>
+    <h2 class="serif" id="galleryTitle">My <em>designs</em></h2>
     <div class="lib-row">
       <span id="count" class="tips"></span>
       <button type="button" class="btn btn-soft" id="libraryLink" hidden>Copy link to open on another device</button>
     </div>
   </div>
-  <p class="empty" id="galleryEmpty" hidden>Designs you save will appear here.</p>
+  <div class="dash-row">
+    <div class="seg gallery-filter" id="galleryFilter" role="group" aria-label="Show">
+      <button type="button" data-v="all" aria-pressed="true">All</button>
+      <button type="button" data-v="fav" aria-pressed="false"><i class="fa-solid fa-heart" aria-hidden="true"></i> <span>Favorites</span></button>
+    </div>
+    <span class="dash-tokens" id="dashTokens" hidden></span>
+    <button type="button" class="btn btn-soft" id="signOut" hidden>Sign out</button>
+  </div>
+  <p class="empty" id="galleryEmpty" hidden>Designs you generate appear here. Tap the heart to keep your favorites.</p>
   <div class="grid" id="galleryGrid"></div>
 </section>
 
@@ -813,7 +891,17 @@ function friendlyError(e) {
   }
   return getKey() ? 'Could not reach Gemini. Check your internet connection.' : 'Could not reach the Makeover server. Check your internet connection and try again.';
 }
-var freeLeft = null;
+// Tokens and sign-in: every visitor starts as a guest with 50 tokens; each design costs 10
+var SESSION_STORE = 'makeover-session';
+var TOKENS_PER_IMAGE = 10;
+var me = null;
+var session = '';
+try { session = localStorage.getItem(SESSION_STORE) || ''; } catch (e) {}
+function authHeaders(extra) {
+  var h = Object.assign({}, extra || {});
+  if (session) h.Authorization = 'Bearer ' + session;
+  return h;
+}
 function getKey() { return $('apiKey').value.trim(); }
 try { $('apiKey').value = localStorage.getItem(KEY_STORE) || ''; keyStored = true; } catch (e) {}
 $('clearKey').addEventListener('click', function () {
@@ -965,10 +1053,10 @@ async function callModel(model, photo, prompt, size) {
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': getKey() },
           body: JSON.stringify(payload)
         })
-      : await fetch(PROXY + '/generate', {
+      : await fetch(PROXY + '/generate?lib=' + LIBRARY, {
           signal: ctrl.signal,
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ model: model, payload: payload })
         });
   } catch (e) {
@@ -982,13 +1070,16 @@ async function callModel(model, photo, prompt, size) {
   }
   var json = await res.json().catch(function () { return {}; });
   var msg = (json.error && json.error.message) || '';
-  var left = res.headers.get('X-Free-Left');
-  if (left !== null) { freeLeft = Number(left); refresh(); }
-  if (json.quotaExhausted) {
-    freeLeft = 0;
+  var left = res.headers.get('X-Tokens-Left');
+  if (left !== null && me) { me.tokens = Number(left); refresh(); }
+  if (json.needTokens) {
+    if (me) me.tokens = json.tokens || 0;
     refresh();
-    throw new Error(msg);
+    var out = new Error(msg);
+    out.needTokens = true;
+    throw out;
   }
+  if (json.quotaExhausted) throw new Error(msg);
   if (res.status === 504 || res.status === 503 || /deadline|timed? ?out|overloaded|unavailable/i.test(msg)) {
     var slow = new Error('Gemini took too long to answer this time. Please press the button again in a moment.');
     slow.timeout = true;
@@ -1032,10 +1123,18 @@ function parseNotes(text) {
 
 function showError(msg) { $('error').textContent = msg; $('error').hidden = !msg; }
 
+// With our server (no own key), a design needs 10 tokens; otherwise show the out-of-tokens popup
+function hasTokens() {
+  if (getKey() || !me || me.tokens >= TOKENS_PER_IMAGE) return true;
+  openTokens();
+  return false;
+}
+
 $('generate').addEventListener('click', async function () {
   if (!state.photo) { showError('Upload a photo of your room first.'); $('file').click(); return; }
   if (!state.style) { showError('Pick a style first.'); $('styleField').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
   showError('');
+  if (!hasTokens()) return;
   $('generate').hidden = true;
   $('loading').hidden = false;
   setBusy(true);
@@ -1055,8 +1154,10 @@ $('generate').addEventListener('click', async function () {
     state.saved = false;
     $('slider').value = 50;
     refresh();
+    recordDesign(state.versions[0], state.result, '');
     if (!DESKTOP.matches) $('workspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
+    if (e.needTokens) { openTokens(); return; }
     showError(friendlyError(e));
     if (/not valid/i.test(e.message)) openKeyField();
   } finally {
@@ -1089,6 +1190,7 @@ async function applyRefine() {
   var change = $('refineText').value.trim();
   if (!change) { showRefineError('Type a change first, or tap one of the ideas.'); $('refineText').focus(); return; }
   showRefineError('');
+  if (!hasTokens()) return;
   $('refineBtn').hidden = true;
   $('refineLoading').hidden = false;
   try {
@@ -1101,7 +1203,9 @@ async function applyRefine() {
     state.versions = state.versions.slice(0, state.vIndex + 1).concat([v]);
     showVersion(state.versions.length - 1);
     $('refineText').value = '';
+    recordDesign(v, v.img, ' · ' + v.label);
   } catch (e) {
+    if (e.needTokens) { openTokens(); return; }
     showRefineError(friendlyError(e));
   } finally {
     $('refineBtn').hidden = false;
@@ -1117,7 +1221,7 @@ function showVersion(i) {
   state.result = v.img;
   state.notes = v.notes;
   state.cost = v.cost;
-  state.saved = false;
+  state.saved = !!v.favorite;
   refresh();
 }
 
@@ -1170,15 +1274,19 @@ function showAngleError(msg) { $('angleError').textContent = msg; $('angleError'
 
 async function makeAngle(a) {
   showAngleError('');
+  if (!hasTokens()) return;
   $('angleChips').hidden = true;
   $('angleLoading').hidden = false;
   try {
     // Angles are quick previews: a smaller reference and 1K output make them roughly twice as fast
     var current = await resizeImage(state.result, 1280, 0.88);
     var out = await callGemini(current, buildAnglePrompt(a), '1K');
-    state.angles = [{ img: out.img, name: a.name }].concat(state.angles || []);
+    var view = { img: out.img, name: a.name };
+    state.angles = [view].concat(state.angles || []);
     renderAngles();
+    recordDesign(view, view.img, ' · ' + a.name);
   } catch (e) {
+    if (e.needTokens) { openTokens(); return; }
     showAngleError(friendlyError(e));
   } finally {
     $('angleChips').hidden = false;
@@ -1218,7 +1326,7 @@ function renderAngles() {
     save.innerHTML = v.saved ? SAVED : SAVE;
     save.disabled = !!v.saved;
     save.addEventListener('click', async function () {
-      var ok = await saveToGallery(v.img, ' · ' + v.name);
+      var ok = await favoriteDesign(v, v.img, ' · ' + v.name);
       if (ok) { v.saved = true; renderAngles(); }
     });
     var tools = document.createElement('div');
@@ -1344,7 +1452,7 @@ function shortDate(iso) {
 async function cloudCall(method, path, body) {
   var res = await fetch(PROXY + path + (path.indexOf('?') < 0 ? '?' : '&') + 'lib=' + LIBRARY, {
     method: method,
-    headers: body ? { 'Content-Type': 'application/json' } : {},
+    headers: authHeaders(body ? { 'Content-Type': 'application/json' } : {}),
     body: body ? JSON.stringify(body) : undefined
   });
   var json = await res.json().catch(function () { return {}; });
@@ -1356,20 +1464,20 @@ var cloud = {
   list: function () {
     return cloudCall('GET', '/designs').then(function (r) {
       return r.designs.map(function (row) {
-        return { id: row.id, name: row.name, note: row.note, style: row.style, room: row.room, cost: row.cost, thumb: row.thumb, date: shortDate(row.created_at) };
+        return { id: row.id, name: row.name, note: row.note, style: row.style, room: row.room, cost: row.cost, thumb: row.thumb, favorite: !!row.favorite, kind: row.kind, date: shortDate(row.created_at) };
       });
     });
   },
   create: function (item, img) {
     return cloudCall('POST', '/designs', {
-      design: { id: String(item.id), name: item.name, note: item.note || '', style: item.style, room: item.room, cost: item.cost, thumb: item.thumb },
+      design: { id: String(item.id), name: item.name, note: item.note || '', style: item.style, room: item.room, cost: item.cost, thumb: item.thumb, favorite: !!item.favorite, kind: item.kind || 'saved' },
       image: img
     });
   },
-  update: function (g) { return cloudCall('PATCH', '/designs/' + g.id, { name: g.name, note: g.note || '' }); },
+  update: function (g) { return cloudCall('PATCH', '/designs/' + g.id, { name: g.name, note: g.note || '', favorite: !!g.favorite }); },
   remove: function (id) { return cloudCall('DELETE', '/designs/' + id); },
   imageBlob: async function (id) {
-    var res = await fetch(PROXY + '/designs/' + id + '/image?lib=' + LIBRARY);
+    var res = await fetch(PROXY + '/designs/' + id + '/image?lib=' + LIBRARY, { headers: authHeaders() });
     if (!res.ok) throw new Error('Could not load the full image.');
     return res.blob();
   }
@@ -1403,14 +1511,45 @@ async function loadGallery() {
   renderGallery();
 }
 
-// Saves any image of the current design (the main result or an angle view) to My designs
-async function saveToGallery(img, suffix) {
+// Every finished design (main result, refinement or angle) is kept in the design history online;
+// the heart marks favorites. `source` is the version or angle object, so it remembers its design id.
+function designItem(img, suffix, favorite) {
   var s = styleById(state.resultStyle);
   var r = roomById(state.resultRoom);
-  var item = {
+  return {
     id: newDesignId(), style: state.resultStyle, room: state.resultRoom, cost: state.cost,
-    name: s.name + ' ' + r.name.toLowerCase() + (suffix || ''), note: '', date: shortDate()
+    name: s.name + ' ' + r.name.toLowerCase() + (suffix || ''), note: '', date: shortDate(),
+    favorite: favorite, kind: favorite ? 'saved' : 'generated'
   };
+}
+async function recordDesign(source, img, suffix) {
+  if (storageMode !== 'cloud') return;
+  var item = designItem(img, suffix, false);
+  source.designId = item.id;
+  try { item.thumb = await resizeImage(img, 720, 0.8); } catch (e) {}
+  item.img = img;
+  try {
+    source.recording = cloud.create(item, img);
+    await source.recording;
+  } catch (e) { source.designId = null; return; }
+  if (!gallery.some(function (g) { return g.id === item.id; })) gallery.unshift(item);
+  renderGallery();
+}
+async function favoriteDesign(source, img, suffix) {
+  if (source.recording) { try { await source.recording; } catch (e) {} }
+  var g = source.designId && gallery.find(function (h) { return h.id === source.designId; });
+  if (!g) return saveToGallery(img, suffix, source);
+  g.favorite = true;
+  source.favorite = true;
+  try { await cloud.update(g); } catch (e) { g.favorite = false; source.favorite = false; alert('Could not save this design. Please try again.'); return false; }
+  renderGallery();
+  return true;
+}
+
+// Saves any image of the current design (the main result or an angle view) to My designs as a favorite
+async function saveToGallery(img, suffix, source) {
+  var item = designItem(img, suffix, true);
+  if (source) { source.designId = item.id; source.favorite = true; }
   try { item.thumb = await resizeImage(img, 720, 0.8); } catch (e) {}
   item.img = img;
   gallery.unshift(item);
@@ -1425,11 +1564,6 @@ async function saveToGallery(img, suffix) {
     return false;
   }
   renderGallery();
-  var card = document.querySelector('#galleryGrid .gcard');
-  if (card) {
-    card.classList.add('fresh');
-    setTimeout(function () { card.classList.remove('fresh'); }, 2500);
-  }
   return true;
 }
 
@@ -1459,12 +1593,12 @@ $('libraryLink').addEventListener('click', function () {
 
 $('save').addEventListener('click', async function () {
   if (state.saved || !state.result) return;
-  if (!(await saveToGallery(state.result))) return;
+  if (!(await favoriteDesign(state.versions[state.vIndex], state.result, state.vIndex ? ' · ' + state.versions[state.vIndex].label : ''))) return;
   state.saved = true;
   refresh();
   // Take the user to the saved card so they can see it landed
   $('gallery').scrollIntoView({ behavior: 'smooth' });
-  var card = document.querySelector('#galleryGrid .gcard');
+  var card = document.querySelector('#galleryGrid .gcard[data-id="' + state.versions[state.vIndex].designId + '"]');
   if (card) {
     card.classList.add('fresh');
     setTimeout(function () { card.classList.remove('fresh'); }, 2500);
@@ -1498,18 +1632,43 @@ function editForm(g) {
   return form;
 }
 
+var galleryFilter = 'all';
+document.querySelectorAll('#galleryFilter button').forEach(function (b) {
+  b.addEventListener('click', function () { galleryFilter = b.dataset.v; renderGallery(); });
+});
+function toggleFavorite(g) {
+  g.favorite = !g.favorite;
+  // Keep the studio's Save button in step when this is the design on screen
+  var v = state.versions && state.versions[state.vIndex];
+  if (v && v.designId === g.id) { v.favorite = g.favorite; state.saved = g.favorite; $('saveLabel').textContent = state.saved ? 'Saved' : 'Save'; $('save').querySelector('i').className = state.saved ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'; }
+  (storageMode === 'cloud' ? cloud.update(g) : designs.put(g)).catch(function () { g.favorite = !g.favorite; renderGallery(); alert('Could not save the change. Please try again.'); });
+  renderGallery();
+}
+
 function renderGallery() {
   var grid = $('galleryGrid');
   grid.innerHTML = '';
-  gallery.forEach(function (g) {
+  pressAll('#galleryFilter button', function (b) { return b.dataset.v === galleryFilter; });
+  var shown = galleryFilter === 'fav' ? gallery.filter(function (g) { return g.favorite !== false; }) : gallery;
+  shown.forEach(function (g) {
     var s = styleById(g.style);
     var room = g.room && roomById(g.room) ? roomById(g.room).name : '';
     var label = s.name + (room ? ' · ' + room : '');
     var card = document.createElement('article');
     card.className = 'gcard';
+    card.dataset.id = g.id;
     var thumb = document.createElement('div');
     thumb.className = 'thumb';
     thumb.style.backgroundImage = 'url(' + (g.thumb || IMG(s.img, 720)) + ')';
+    var fav = g.favorite !== false;
+    var heart = document.createElement('button');
+    heart.type = 'button';
+    heart.className = 'heart' + (fav ? ' on' : '');
+    heart.setAttribute('aria-pressed', String(fav));
+    heart.setAttribute('aria-label', fav ? 'Remove from favorites' : 'Add to favorites');
+    heart.innerHTML = '<i class="' + (fav ? 'fa-solid' : 'fa-regular') + ' fa-heart" aria-hidden="true"></i>';
+    heart.addEventListener('click', function () { toggleFavorite(g); });
+    thumb.appendChild(heart);
     card.appendChild(thumb);
 
     if (editingId === g.id) {
@@ -1553,9 +1712,129 @@ function renderGallery() {
     card.appendChild(meta);
     grid.appendChild(card);
   });
-  $('galleryEmpty').hidden = gallery.length > 0;
-  $('count').textContent = (gallery.length === 1 ? '1 saved' : gallery.length + ' saved') + (storageMode === 'cloud' ? ' online' : ' in this browser');
-  $('libraryLink').hidden = storageMode !== 'cloud';
+  var favs = gallery.filter(function (g) { return g.favorite !== false; }).length;
+  $('galleryEmpty').hidden = shown.length > 0;
+  $('galleryEmpty').textContent = galleryFilter === 'fav' && gallery.length ? 'No favorites yet. Tap the heart on a design to keep it here.' : 'Designs you generate appear here. Tap the heart to keep your favorites.';
+  $('count').textContent = (gallery.length === 1 ? '1 design' : gallery.length + ' designs') + ' · ' + favs + (favs === 1 ? ' favorite' : ' favorites') + (storageMode === 'cloud' ? (signedIn() ? ' · on every device' : ' · online') : ' · in this browser');
+  $('libraryLink').hidden = storageMode !== 'cloud' || signedIn();
+  renderAccount();
+}
+
+// ---------- Account: token balance, Sign in, dashboard header ----------
+function signedIn() { return !!(me && me.type === 'user'); }
+function tokenText(n) { return n + (n === 1 ? ' token' : ' tokens'); }
+function renderAccount() {
+  var own = !!getKey();
+  $('tokenPill').hidden = !me || own;
+  $('authBtn').hidden = !me;
+  if (!me) return;
+  $('tokenCount').textContent = tokenText(me.tokens);
+  $('tokenPill').classList.toggle('low', me.tokens < TOKENS_PER_IMAGE);
+  $('tokenPill').title = Math.floor(me.tokens / TOKENS_PER_IMAGE) + ' designs left · 10 tokens per design';
+  if (signedIn()) {
+    var first = (me.name || me.email || 'there').split(' ')[0];
+    $('authBtn').innerHTML = (me.picture ? '<img src="" alt="">' : '<i class="fa-solid fa-circle-user" aria-hidden="true"></i>') + '<span></span>';
+    if (me.picture) $('authBtn').querySelector('img').src = me.picture;
+    $('authBtn').querySelector('span').textContent = first;
+    $('authBtn').setAttribute('aria-label', 'My dashboard');
+    $('galleryTitle').innerHTML = 'Welcome back, <em></em>';
+    $('galleryTitle').querySelector('em').textContent = first;
+  } else {
+    $('authBtn').innerHTML = '<i class="fa-brands fa-google" aria-hidden="true"></i><span>Sign in</span>';
+    $('authBtn').setAttribute('aria-label', 'Sign in');
+    $('galleryTitle').innerHTML = 'My <em>designs</em>';
+  }
+  $('dashTokens').hidden = own;
+  $('dashTokens').innerHTML = '<i class="fa-solid fa-coins" aria-hidden="true"></i><span></span>';
+  $('dashTokens').querySelector('span').textContent = tokenText(me.tokens) + ' left · ' + Math.floor(me.tokens / TOKENS_PER_IMAGE) + ' designs';
+  $('signOut').hidden = !signedIn();
+}
+
+function openDialog(id) {
+  var d = $(id);
+  if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else { d.setAttribute('open', ''); }
+}
+function closeDialog(id) { var d = $(id); if (d.open) d.close(); }
+
+// Out of tokens (or a look at the balance from the header pill)
+function openTokens() {
+  var n = me ? me.tokens : 0;
+  var out = n < TOKENS_PER_IMAGE;
+  $('tokensTitle').textContent = out ? "You're out of tokens" : 'Your tokens';
+  $('tokensLead').textContent = out
+    ? 'Each design costs 10 tokens and you have ' + tokenText(n) + ' left. Choose how to keep designing:'
+    : 'You have ' + tokenText(n) + ', enough for ' + Math.floor(n / TOKENS_PER_IMAGE) + ' more designs. Each design costs 10 tokens.';
+  $('chooseSignIn').hidden = signedIn();
+  openDialog('tokensDialog');
+}
+$('tokenPill').addEventListener('click', openTokens);
+$('choosePlan').addEventListener('click', function () { closeDialog('tokensDialog'); openDialog('plansDialog'); });
+$('chooseSignIn').addEventListener('click', function () { closeDialog('tokensDialog'); openSignIn(); });
+$('authBtn').addEventListener('click', function () {
+  if (signedIn()) $('gallery').scrollIntoView({ behavior: 'smooth' });
+  else openSignIn();
+});
+
+// Google sign-in (Google Identity Services), loaded only when someone opens Sign in
+var gsiLoading = null;
+function loadGsi() {
+  if (!gsiLoading) gsiLoading = new Promise(function (resolve, reject) {
+    var s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.onload = resolve;
+    s.onerror = function () { gsiLoading = null; reject(new Error('Could not load Google sign-in. Check your connection.')); };
+    document.head.appendChild(s);
+  });
+  return gsiLoading;
+}
+function showSigninError(msg) { $('signinError').textContent = msg; $('signinError').hidden = !msg; }
+async function openSignIn() {
+  showSigninError('');
+  openDialog('signinDialog');
+  if (!me || !me.googleClientId) {
+    $('gsiBtn').innerHTML = '';
+    showSigninError(location.hostname !== 'atefnansi-max.github.io' ? 'Sign-in only works on the live site: ' + LIVE_SITE : 'Google sign-in is being set up and will be ready soon.');
+    return;
+  }
+  try {
+    await loadGsi();
+    google.accounts.id.initialize({ client_id: me.googleClientId, callback: onGoogleCredential, ux_mode: 'popup' });
+    $('gsiBtn').innerHTML = '';
+    google.accounts.id.renderButton($('gsiBtn'), { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', width: 280 });
+  } catch (e) { showSigninError(e.message); }
+}
+async function onGoogleCredential(resp) {
+  showSigninError('');
+  try {
+    var r = await cloudCall('POST', '/auth/google', { credential: resp.credential, lib: LIBRARY });
+    session = r.session;
+    try { localStorage.setItem(SESSION_STORE, session); } catch (e) {}
+    me = r.me;
+    closeDialog('signinDialog');
+    await loadGallery();
+    refresh();
+    $('gallery').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) { showSigninError(e.message); }
+}
+$('signOut').addEventListener('click', async function () {
+  try { await cloudCall('POST', '/auth/logout'); } catch (e) {}
+  session = '';
+  try { localStorage.removeItem(SESSION_STORE); } catch (e) {}
+  if (window.google && google.accounts) google.accounts.id.disableAutoSelect();
+  await loadMe();
+  await loadGallery();
+  refresh();
+});
+
+async function loadMe() {
+  try {
+    me = await cloudCall('GET', '/me');
+    // An expired session falls back to the guest account; forget it
+    if (session && me.type !== 'user') { session = ''; try { localStorage.removeItem(SESSION_STORE); } catch (e) {} }
+    TOKENS_PER_IMAGE = me.tokensPerImage || TOKENS_PER_IMAGE;
+  } catch (e) { me = null; }
+  renderAccount();
 }
 
 function pressAll(sel, isOn) {
@@ -1585,7 +1864,7 @@ function refresh() {
   $('generate').classList.toggle('not-ready', !ready);
   $('generate').setAttribute('aria-disabled', String(!ready));
   $('keyState').textContent = !hasKey ? '(optional)' : keyLooksWrong ? '(this does not look like an API key: click Show to check it)' : keyStored ? '(saved, used instead of the free designs)' : '(this visit only)';
-  var freeNote = hasKey ? '' : freeLeft === null ? ' · free, no key needed' : freeLeft > 0 ? ' · ' + freeLeft + ' free designs left today' : ' · free designs used up today';
+  var freeNote = hasKey || !me ? '' : ' · 10 tokens per design, ' + tokenText(me.tokens) + ' left';
   $('hint').textContent = !state.photo ? 'Upload a photo to start'
     : !state.style ? 'Now pick a style'
     : (state.quality === 'hd' ? 'HD takes about 1 to 2 minutes' : 'Takes about 20 to 40 seconds') + freeNote;
@@ -1659,7 +1938,7 @@ setInterval(function () {
 }, 500);
 
 refresh();
-loadGallery();
+loadMe().then(loadGallery);
 </script>
 </body>
 </html>
