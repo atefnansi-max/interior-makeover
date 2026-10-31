@@ -259,11 +259,10 @@ nav a, nav button { white-space: nowrap; }
 .token-pill.low { border-color: var(--accent); color: var(--accent); }
 .token-pill { position: relative; }
 .token-pill.own i { color: var(--muted); }
-.token-pill.spent { animation: spent-pulse 1.2s ease; }
-@keyframes spent-pulse { 0% { border-color: var(--accent); box-shadow: 0 0 0 0 rgba(122,15,36,.35); } 60% { box-shadow: 0 0 0 8px rgba(122,15,36,0); } 100% { border-color: var(--line); } }
-.spent-tag { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 4px; padding: 2px 10px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; white-space: nowrap; pointer-events: none; animation: spent-float 1.8s ease forwards; }
-@keyframes spent-float { 0% { opacity: 0; transform: translate(-50%, -6px); } 15% { opacity: 1; transform: translate(-50%, 0); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, 10px); } }
-@media (prefers-reduced-motion: reduce) { .token-pill.spent, .spent-tag { animation: none; } }
+.token-pill.spent { background: var(--accent); border-color: var(--accent); color: #fff; animation: spent-pulse 1.2s ease; }
+.token-pill.spent i { color: #FCCC78; }
+@keyframes spent-pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(122,15,36,.4); } 25% { transform: scale(1.08); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(122,15,36,0); } }
+@media (prefers-reduced-motion: reduce) { .token-pill.spent { animation: none; } }
 .auth-btn { min-height: 40px !important; padding: 0 16px !important; font-size: 14px !important; gap: 8px; }
 .auth-btn img { width: 26px; height: 26px; border-radius: 999px; object-fit: cover; margin-left: -8px; }
 .gcard .thumb { position: relative; }
@@ -1744,17 +1743,16 @@ function renderGallery() {
 function signedIn() { return !!(me && me.type === 'user'); }
 function tokenText(n) { return n + (n === 1 ? ' token' : ' tokens'); }
 // Make each deduction visible: a "−10" floats off the balance in the header
+var spentTimer = null;
 function showSpent(n) {
   var pill = $('tokenPill');
-  var tag = document.createElement('span');
-  tag.className = 'spent-tag';
-  tag.textContent = '−' + n;
-  pill.appendChild(tag);
+  clearTimeout(spentTimer);
   pill.classList.remove('spent');
   void pill.offsetWidth;
   pill.classList.add('spent');
+  $('tokenCount').textContent = '−' + n + ' tokens';
   $('tokenLive').textContent = n + ' tokens used. ' + tokenText(me.tokens) + ' left.';
-  setTimeout(function () { tag.remove(); pill.classList.remove('spent'); }, 1800);
+  spentTimer = setTimeout(function () { pill.classList.remove('spent'); renderAccount(); }, 1600);
 }
 function renderAccount() {
   var own = !!getKey();
@@ -1764,7 +1762,7 @@ function renderAccount() {
   // With the visitor's own Gemini key, designs are paid by that key and tokens are not used
   $('tokenPill').classList.toggle('own', own);
   $('tokenPill').querySelector('i').className = own ? 'fa-solid fa-key' : 'fa-solid fa-coins';
-  $('tokenCount').textContent = own ? 'Own key' : tokenText(me.tokens);
+  if (!$('tokenPill').classList.contains('spent')) $('tokenCount').textContent = own ? 'Own key' : tokenText(me.tokens);
   $('tokenPill').classList.toggle('low', !own && me.tokens < TOKENS_PER_IMAGE);
   $('tokenPill').title = own ? 'Using your own Gemini key from Settings: tokens are not used' : Math.floor(me.tokens / TOKENS_PER_IMAGE) + ' designs left · 10 tokens per design';
   if (signedIn()) {
