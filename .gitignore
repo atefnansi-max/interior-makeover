@@ -1,0 +1,6 @@
+# Secrets and local tool files: never commit these
+.env
+*.env
+worker/.env
+worker/.wrangler/
+node_modules/

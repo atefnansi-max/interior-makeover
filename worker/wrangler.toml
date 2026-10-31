@@ -1,0 +1,14 @@
+name = "makeover-proxy"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Daily usage counters
+[[kv_namespaces]]
+binding = "USAGE"
+id = "d513523c687f4f39896b58aad1579a29"
+
+[vars]
+ALLOWED_ORIGINS = "https://atefnansi-max.github.io"
+# Free generations per day for the whole site and for each visitor (each Generate, Refine or angle is one)
+DAILY_LIMIT_SITE = "60"
+DAILY_LIMIT_PER_VISITOR = "15"

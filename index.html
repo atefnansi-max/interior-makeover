@@ -390,14 +390,14 @@ footer .logo { font-size: 24px; color: var(--ink); }
           <p class="hint" id="hint">Upload a photo to start</p>
           <p class="error" id="error" role="alert" hidden></p>
           <details id="keyBox">
-            <summary>Gemini API key <span id="keyState" class="tips">(needed once)</span></summary>
+            <summary>Your own Gemini API key <span id="keyState" class="tips">(optional)</span></summary>
             <div class="keyrow">
               <input type="text" id="apiKey" name="gemini-key-field" class="masked" placeholder="Paste your Gemini API key" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore aria-label="Gemini API key">
               <button type="button" class="btn btn-soft" id="showKey" style="min-height:46px;padding:0 18px;font-size:14px" aria-pressed="false">Show</button>
               <button type="button" class="btn btn-soft" id="clearKey" style="min-height:46px;padding:0 18px;font-size:14px">Clear</button>
               <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a key</a>
             </div>
-            <p class="keynote">Saved only in this browser. No subscription and no plan to buy: you only pay Google directly for the images you create, usually a few cents each.</p>
+            <p class="keynote">Not needed: leave it empty to use the free designs (a daily limit applies). If you add your own key, it's saved only in this browser and you pay Google directly, usually a few cents per image.</p>
           </details>
         </div>
       </div>
@@ -683,9 +683,11 @@ $('changePhoto').addEventListener('click', function () { $('file').click(); });
 
 // API key (kept in this browser only)
 var keyStored = false;
+var PROXY = 'https://makeover-proxy.makeover-group36.workers.dev';
+var freeLeft = null;
 function getKey() { return $('apiKey').value.trim(); }
 try { $('apiKey').value = localStorage.getItem(KEY_STORE) || ''; keyStored = true; } catch (e) {}
-$('keyBox').open = !getKey();
+$('keyBox').open = false;
 $('clearKey').addEventListener('click', function () {
   $('apiKey').value = '';
   try { localStorage.removeItem(KEY_STORE); } catch (e) {}
@@ -818,20 +820,29 @@ async function callModel(model, photo, prompt, size) {
   var limitMs = size === '2K' ? 150000 : 60000;
   var ctrl = new AbortController();
   var timer = setTimeout(function () { ctrl.abort(); }, limitMs);
+  var payload = {
+    contents: [{ parts: [
+      { inline_data: { mime_type: 'image/jpeg', data: photo.split(',')[1] } },
+      { text: prompt }
+    ] }],
+    generationConfig: config
+  };
   var res;
   try {
-    res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
-      signal: ctrl.signal,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': getKey() },
-      body: JSON.stringify({
-        contents: [{ parts: [
-          { inline_data: { mime_type: 'image/jpeg', data: photo.split(',')[1] } },
-          { text: prompt }
-        ] }],
-        generationConfig: config
-      })
-    });
+    // With the visitor's own key, call Gemini directly; otherwise go through our free server
+    res = getKey()
+      ? await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
+          signal: ctrl.signal,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': getKey() },
+          body: JSON.stringify(payload)
+        })
+      : await fetch(PROXY + '/generate', {
+          signal: ctrl.signal,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: model, payload: payload })
+        });
   } catch (e) {
     if (e.name !== 'AbortError') throw e;
     var cut = new Error('Gemini took too long to answer this time. Please press the button again in a moment.');
@@ -843,6 +854,13 @@ async function callModel(model, photo, prompt, size) {
   }
   var json = await res.json().catch(function () { return {}; });
   var msg = (json.error && json.error.message) || '';
+  var left = res.headers.get('X-Free-Left');
+  if (left !== null) { freeLeft = Number(left); refresh(); }
+  if (json.quotaExhausted) {
+    freeLeft = 0;
+    refresh();
+    throw new Error(msg);
+  }
   if (res.status === 504 || res.status === 503 || /deadline|timed? ?out|overloaded|unavailable/i.test(msg)) {
     var slow = new Error('Gemini took too long to answer this time. Please press the button again in a moment.');
     slow.timeout = true;
@@ -936,7 +954,6 @@ function showRefineError(msg) { $('refineError').textContent = msg; $('refineErr
 async function applyRefine() {
   var change = $('refineText').value.trim();
   if (!change) { showRefineError('Type a change first, or tap one of the ideas.'); $('refineText').focus(); return; }
-  if (!getKey()) { showRefineError('Add your Gemini API key in the studio first.'); return; }
   showRefineError('');
   $('refineBtn').hidden = true;
   $('refineLoading').hidden = false;
@@ -1018,7 +1035,6 @@ function buildAnglePrompt(a) {
 function showAngleError(msg) { $('angleError').textContent = msg; $('angleError').hidden = !msg; }
 
 async function makeAngle(a) {
-  if (!getKey()) { showAngleError('Add your Gemini API key in the studio first.'); return; }
   showAngleError('');
   $('angleChips').hidden = true;
   $('angleLoading').hidden = false;
@@ -1334,13 +1350,14 @@ function refresh() {
   // Gemini keys are one unbroken string; spaces or a very short value mean something else was pasted
   var keyLooksWrong = hasKey && (/\s/.test(getKey()) || getKey().length < 30);
   if (keyLooksWrong) $('keyBox').open = true;
-  var ready = !!state.photo && !!state.style && hasKey;
+  // No key needed: without one, designs go through our free server (with a daily limit)
+  var ready = !!state.photo && !!state.style;
   $('generate').disabled = !ready;
-  $('keyState').textContent = !hasKey ? '(needed once)' : keyLooksWrong ? '(this does not look like an API key: click Show to check it)' : keyStored ? '(saved)' : '(this visit only: open the file in Chrome or Edge to keep it)';
+  $('keyState').textContent = !hasKey ? '(optional)' : keyLooksWrong ? '(this does not look like an API key: click Show to check it)' : keyStored ? '(saved, used instead of the free designs)' : '(this visit only)';
+  var freeNote = hasKey ? '' : freeLeft === null ? ' · free, no key needed' : freeLeft > 0 ? ' · ' + freeLeft + ' free designs left today' : ' · free designs used up today';
   $('hint').textContent = !state.photo ? 'Upload a photo to start'
     : !state.style ? 'Now pick a style in the Style tab'
-    : !hasKey ? 'Add your Gemini API key below'
-    : state.quality === 'hd' ? 'HD takes about 1 to 2 minutes' : 'Takes about 20 to 40 seconds';
+    : (state.quality === 'hd' ? 'HD takes about 1 to 2 minutes' : 'Takes about 20 to 40 seconds') + freeNote;
 
   var has = !!state.result;
   $('noResult').hidden = has;
