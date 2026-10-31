@@ -512,6 +512,7 @@ export async function buildRoom(container, rawSpec, opts = {}) {
     return [W / 2 - along, D / 2, Math.PI];
   };
 
+  const followers = [];
   spec.objects.forEach(o => {
     const kind = B[o.type] ? o.type : ALIAS[o.type] || 'box';
     const g = new THREE.Group();
@@ -532,6 +533,12 @@ export async function buildRoom(container, rawSpec, opts = {}) {
       g.position.set(o.x, g.userData.noFloor ? 0 : o.y, o.z);
       g.rotation.y = o.rot;
       scene.add(g);
+      // Tall pieces standing against a wall hide with it, so they never block the dollhouse view
+      if (o.h > 1.1 && !g.userData.noFloor) {
+        const gap = { back: o.z + D / 2, front: D / 2 - o.z, left: o.x + W / 2, right: W / 2 - o.x };
+        const near = WALLS.reduce((a, b) => (gap[a] < gap[b] ? a : b));
+        if (gap[near] < 0.7) followers.push([g, near]);
+      }
     }
     if (g.userData.light) {
       g.updateMatrixWorld(true);
@@ -564,6 +571,7 @@ export async function buildRoom(container, rawSpec, opts = {}) {
     wallGroups.left.visible = pos.x > -W / 2;
     wallGroups.right.visible = pos.x < W / 2;
     ceiling.visible = pos.y < H && pos.x > -W / 2 && pos.x < W / 2 && pos.z > -D / 2 && pos.z < D / 2;
+    followers.forEach(([g, w]) => { g.visible = wallGroups[w].visible; });
   };
 
   let dirty = true;
