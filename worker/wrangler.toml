@@ -7,6 +7,16 @@ compatibility_date = "2026-10-01"
 binding = "USAGE"
 id = "d513523c687f4f39896b58aad1579a29"
 
+# Saved designs: details in D1, full images in KV
+[[d1_databases]]
+binding = "DB"
+database_name = "makeover-db"
+database_id = "1cb0ddf7-6bc0-48de-a7a0-a57e921f11eb"
+
+[[kv_namespaces]]
+binding = "DESIGN_IMAGES"
+id = "dad895ecfb7a45dbb36f2d03fdc5e79c"
+
 [vars]
 ALLOWED_ORIGINS = "https://atefnansi-max.github.io"
 # Free generations per day for the whole site and for each visitor (each Generate, Refine or angle is one)

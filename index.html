@@ -210,6 +210,8 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 20px; }
 .gcard { display: flex; flex-direction: column; border-radius: 24px; overflow: hidden; background: var(--paper); border: 1px solid var(--line); }
 .gcard { transition: box-shadow .4s, border-color .4s; }
+.lib-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.lib-row .btn { min-height: 40px; padding: 0 16px; font-size: 14px; }
 .gnote { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
 .gedit { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px 16px; }
 .gedit label { font-size: 13px; font-weight: 700; }
@@ -577,7 +579,10 @@ footer .logo { font-size: 24px; color: var(--ink); }
 <section id="gallery" class="wrap gallery-sec">
   <div class="head">
     <h2 class="serif">My <em>designs</em></h2>
-    <span id="count" class="tips"></span>
+    <div class="lib-row">
+      <span id="count" class="tips"></span>
+      <button type="button" class="btn btn-soft" id="libraryLink" hidden>Copy link to open on another device</button>
+    </div>
   </div>
   <p class="empty" id="galleryEmpty" hidden>Designs you save will appear here.</p>
   <div class="grid" id="galleryGrid"></div>
@@ -1272,18 +1277,96 @@ var designs = {
   }
 };
 
+// Saved designs live online in our backend (Cloudflare D1 + KV). Each browser gets a private library code;
+// the same code in a link opens the library on another device. If the backend can't be reached
+// (offline, or this page opened as a local file), designs fall back to the browser database above.
+var LIBRARY_STORE = 'makeover-library';
+var storageMode = 'cloud';
+function newLibraryCode() {
+  var a = new Uint8Array(16);
+  crypto.getRandomValues(a);
+  return Array.from(a, function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+var LIBRARY = (function () {
+  var fromLink = new URLSearchParams(location.search).get('library');
+  var code = /^[a-f0-9]{32}$/.test(fromLink || '') ? fromLink : null;
+  if (code) {
+    var url = new URL(location.href);
+    url.searchParams.delete('library');
+    history.replaceState(null, '', url);
+  }
+  try { code = code || localStorage.getItem(LIBRARY_STORE); } catch (e) {}
+  if (!/^[a-f0-9]{32}$/.test(code || '')) code = newLibraryCode();
+  try { localStorage.setItem(LIBRARY_STORE, code); } catch (e) {}
+  return code;
+})();
+
+function newDesignId() {
+  return 'd' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+function shortDate(iso) {
+  var d = iso ? new Date(iso) : new Date();
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+async function cloudCall(method, path, body) {
+  var res = await fetch(PROXY + path + (path.indexOf('?') < 0 ? '?' : '&') + 'lib=' + LIBRARY, {
+    method: method,
+    headers: body ? { 'Content-Type': 'application/json' } : {},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  var json = await res.json().catch(function () { return {}; });
+  if (!res.ok) throw new Error((json.error && json.error.message) || 'The designs server had a problem.');
+  return json;
+}
+// Create / read / update / delete against the backend
+var cloud = {
+  list: function () {
+    return cloudCall('GET', '/designs').then(function (r) {
+      return r.designs.map(function (row) {
+        return { id: row.id, name: row.name, note: row.note, style: row.style, room: row.room, cost: row.cost, thumb: row.thumb, date: shortDate(row.created_at) };
+      });
+    });
+  },
+  create: function (item, img) {
+    return cloudCall('POST', '/designs', {
+      design: { id: String(item.id), name: item.name, note: item.note || '', style: item.style, room: item.room, cost: item.cost, thumb: item.thumb },
+      image: img
+    });
+  },
+  update: function (g) { return cloudCall('PATCH', '/designs/' + g.id, { name: g.name, note: g.note || '' }); },
+  remove: function (id) { return cloudCall('DELETE', '/designs/' + id); },
+  imageBlob: async function (id) {
+    var res = await fetch(PROXY + '/designs/' + id + '/image?lib=' + LIBRARY);
+    if (!res.ok) throw new Error('Could not load the full image.');
+    return res.blob();
+  }
+};
+
+// Designs saved in this browser before the backend existed are copied up once, then removed locally
+async function moveLocalDesignsOnline() {
+  var local = [];
+  try { await openDb(); local = await designs.all(); } catch (e) { return; }
+  for (var i = 0; i < local.length; i++) {
+    var g = local[i];
+    var img = g.img || g.thumb;
+    if (!img || !styleById(g.style)) continue;
+    try {
+      await cloud.create(Object.assign({}, g, { id: /^[a-z0-9-]{6,64}$/.test(String(g.id)) ? String(g.id) : newDesignId() }), img);
+      await designs.remove(g.id);
+    } catch (e) { return; }
+  }
+}
+
 async function loadGallery() {
   try {
-    await openDb();
-    // One-time move of designs saved before the switch to IndexedDB
-    var old = [];
-    try { old = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) {}
-    for (var i = 0; i < old.length; i++) await designs.put(old[i]);
-    if (old.length) { try { localStorage.removeItem(KEY); } catch (e) {} }
+    await moveLocalDesignsOnline();
+    gallery = (await cloud.list()).filter(function (g) { return styleById(g.style); });
+    storageMode = 'cloud';
   } catch (e) {
-    useDb = false;
+    storageMode = 'local';
+    try { await openDb(); } catch (e2) { useDb = false; }
+    try { gallery = (await designs.all()).filter(function (g) { return styleById(g.style); }); } catch (e3) { gallery = []; }
   }
-  try { gallery = (await designs.all()).filter(function (g) { return styleById(g.style); }); } catch (e) { gallery = []; }
   renderGallery();
 }
 
@@ -1292,18 +1375,20 @@ async function saveToGallery(img, suffix) {
   var s = styleById(state.resultStyle);
   var r = roomById(state.resultRoom);
   var item = {
-    id: Date.now(), style: state.resultStyle, room: state.resultRoom, cost: state.cost,
-    name: s.name + ' ' + r.name.toLowerCase() + (suffix || ''), note: '',
-    date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    id: newDesignId(), style: state.resultStyle, room: state.resultRoom, cost: state.cost,
+    name: s.name + ' ' + r.name.toLowerCase() + (suffix || ''), note: '', date: shortDate()
   };
   try { item.thumb = await resizeImage(img, 720, 0.8); } catch (e) {}
-  if (useDb) item.img = img;
+  item.img = img;
   gallery.unshift(item);
   try {
-    await designs.put(item);
+    if (storageMode === 'cloud') await cloud.create(item, img);
+    else await designs.put(item);
   } catch (e) {
     gallery.shift();
-    alert('This design could not be saved because browser storage is full. Use Download to keep the picture, or delete older designs.');
+    alert(storageMode === 'cloud'
+      ? 'This design could not be saved: ' + e.message + ' Use Download to keep the picture.'
+      : 'This design could not be saved because browser storage is full. Use Download to keep the picture, or delete older designs.');
     return false;
   }
   renderGallery();
@@ -1314,6 +1399,30 @@ async function saveToGallery(img, suffix) {
   }
   return true;
 }
+
+// Download a saved design: from memory if we have it, otherwise fetch the full image from the backend
+async function downloadDesign(g, name) {
+  var href = g.img, temp = null;
+  if (!href && storageMode === 'cloud') {
+    try { temp = href = URL.createObjectURL(await cloud.imageBlob(g.id)); } catch (e) { href = g.thumb; }
+  }
+  if (!href) href = g.thumb;
+  var a = document.createElement('a');
+  a.href = href;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  if (temp) setTimeout(function () { URL.revokeObjectURL(temp); }, 4000);
+}
+
+$('libraryLink').addEventListener('click', function () {
+  var link = LIVE_SITE + '?library=' + LIBRARY;
+  var btn = this;
+  var done = function () { btn.textContent = 'Link copied'; setTimeout(function () { btn.textContent = 'Copy link to open on another device'; }, 2000); };
+  if (navigator.clipboard) navigator.clipboard.writeText(link).then(done, function () { prompt('Copy this link:', link); });
+  else prompt('Copy this link:', link);
+});
 
 $('save').addEventListener('click', async function () {
   if (state.saved || !state.result) return;
@@ -1349,7 +1458,7 @@ function editForm(g) {
     g.name = form.querySelector('#editName').value.trim() || g.name;
     g.note = form.querySelector('#editNote').value.trim();
     editingId = null;
-    designs.put(g).catch(function () { alert('Could not save the change. Please try again.'); });
+    (storageMode === 'cloud' ? cloud.update(g) : designs.put(g)).catch(function () { alert('Could not save the change. Please try again.'); });
     renderGallery();
   });
   form.querySelector('.cancel').addEventListener('click', function () { editingId = null; renderGallery(); });
@@ -1392,11 +1501,10 @@ function renderGallery() {
     }
     var tools = document.createElement('div');
     tools.style.display = 'flex';
-    var file = g.img || g.thumb;
-    tools.innerHTML = (file ? '<a class="icon-btn dl" download="makeover-' + s.id + '.png" aria-label="Download this design">' + DOWN + '</a>' : '') +
+    tools.innerHTML = '<button type="button" class="icon-btn dl" aria-label="Download this design">' + DOWN + '</button>' +
       '<button type="button" class="icon-btn edit" aria-label="Edit name and note">' + EDIT + '</button>' +
       '<button type="button" class="icon-btn del" aria-label="Delete this design">' + TRASH + '</button>';
-    if (file) tools.querySelector('.dl').href = file;
+    tools.querySelector('.dl').addEventListener('click', function () { downloadDesign(g, 'makeover-' + s.id + '.png'); });
     tools.querySelector('.edit').addEventListener('click', function () {
       editingId = g.id;
       renderGallery();
@@ -1405,7 +1513,7 @@ function renderGallery() {
     tools.querySelector('.del').addEventListener('click', function () {
       if (!confirm('Delete this design?')) return;
       gallery = gallery.filter(function (h) { return h.id !== g.id; });
-      designs.remove(g.id).catch(function () {});
+      (storageMode === 'cloud' ? cloud.remove(g.id) : designs.remove(g.id)).catch(function () {});
       renderGallery();
     });
     meta.append(info, tools);
@@ -1413,7 +1521,8 @@ function renderGallery() {
     grid.appendChild(card);
   });
   $('galleryEmpty').hidden = gallery.length > 0;
-  $('count').textContent = gallery.length === 1 ? '1 saved' : gallery.length + ' saved';
+  $('count').textContent = (gallery.length === 1 ? '1 saved' : gallery.length + ' saved') + (storageMode === 'cloud' ? ' online' : ' in this browser');
+  $('libraryLink').hidden = storageMode !== 'cloud';
 }
 
 function pressAll(sel, isOn) {
