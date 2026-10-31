@@ -265,6 +265,8 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .refs3d { position: absolute; right: 12px; top: 12px; display: flex; gap: 6px; z-index: 2; }
 .refs3d img { width: 54px; height: 40px; object-fit: cover; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(36,33,29,.18); }
 .hint3d { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); margin: 0; padding: 6px 14px; border-radius: 999px; background: rgba(255,255,255,.92); color: var(--muted); font-size: 12.5px; white-space: nowrap; pointer-events: none; z-index: 2; }
+.hint-touch { display: none; }
+@media (hover: none) { .hint-mouse { display: none; } .hint-touch { display: inline; } }
 .progress3d { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(252,247,240,.95); }
 .progress-card { width: min(440px, 100%); display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid var(--line); border-radius: 20px; background: var(--paper); box-shadow: 0 16px 40px rgba(36,33,29,.12); }
 .progress-card h3 { margin: 0; font-size: 28px; }
@@ -542,7 +544,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
               <button type="button" class="btn btn-soft" id="reset3d" aria-label="Reset the 3D view"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i><span>Reset view</span></button>
             </div>
             <div class="refs3d" id="refs3d" title="Built from these views"></div>
-            <p class="hint3d" id="hint3d">Drag to rotate · Scroll or pinch to zoom · Right-drag or two fingers to pan</p>
+            <p class="hint3d" id="hint3d"><span class="hint-mouse">Drag to rotate · Scroll to zoom · Right-drag to pan</span><span class="hint-touch">Drag to turn · Pinch to zoom · Two fingers to pan</span></p>
             <div class="progress3d" id="progress3d" hidden>
               <div class="progress-card" role="status" aria-live="polite">
                 <h3 class="serif">Making your room <em>3D</em></h3>
