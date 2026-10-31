@@ -23,4 +23,4 @@ ALLOWED_ORIGINS = "https://atefnansi-max.github.io"
 DAILY_LIMIT_SITE = "150"
 DAILY_LIMIT_PER_VISITOR = "30"
 # Public Google OAuth Client ID for "Continue with Google" (empty until it is created)
-GOOGLE_CLIENT_ID = ""
+GOOGLE_CLIENT_ID = "740856707723-megtf2l9iqcv34nn6e6arsu7ai5san3m.apps.googleusercontent.com"
