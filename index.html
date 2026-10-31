@@ -232,62 +232,80 @@ footer .logo { font-size: 24px; color: var(--ink); }
   .wrap { padding-left: 32px; padding-right: 32px; }
   nav a.nl { display: inline-block; }
   .hero { padding-top: 56px; padding-bottom: 72px; gap: 56px; }
-  .studio > .wrap { padding-top: 88px; padding-bottom: 88px; }
-  .photo-col { position: sticky; top: 92px; }
   .float.one { left: -24px; }
 }
-/* Desktop: photo, Generate and all options share one screen; each column scrolls on its own */
-@media (min-width: 900px) {
-  .tool { flex-wrap: nowrap; height: calc(100vh - 96px); min-height: 560px; scroll-margin-top: 80px; }
-  .photo-col, .controls { height: 100%; overflow-y: auto; overscroll-behavior: contain; padding-right: 6px; }
-  .photo-col { position: static; flex: 1 1 46%; }
-  .controls { flex: 1 1 54%; gap: 18px; }
-  .drop, .preview { height: clamp(220px, 36vh, 400px); }
-  .photo-col .go { padding: 16px; gap: 10px; }
-  .photo-col .go .btn, .photo-col .loading { min-height: 54px; }
-  .panel { padding: 18px 20px; gap: 18px; }
-  .style img { height: 80px; }
-}
-/* Wide screens: no scrolling at all. Options sit in two compact columns beside the photo */
-@media (min-width: 1100px) {
-  .studio > .wrap { padding-top: 24px; padding-bottom: 24px; gap: 16px; }
-  .studio .head h2 { font-size: 44px; }
-  .tool { gap: 20px; height: calc(100vh - 96px); min-height: 0; }
-  .photo-col, .controls { overflow: hidden; padding-right: 0; }
-  .photo-col { flex: 0 0 38%; gap: 10px; }
-  .photo-col .tips { display: none; }
-  .drop, .preview { height: clamp(160px, 32vh, 380px); }
-  .controls { flex: 1 1 62%; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; gap: 14px; align-content: start; }
-  #panel-0 { grid-column: 1; grid-row: 1; }
-  #panel-2 { grid-column: 1; grid-row: 2; }
-  #panel-1 { grid-column: 2; grid-row: 1 / span 2; }
-  .panel { padding: 14px 16px; gap: 12px; border-radius: 18px; }
-  .panel-title { font-size: 26px; }
-  .panel-title b { width: 28px; height: 28px; font-size: 13px; }
-  .controls .field { gap: 8px; }
-  .controls .label { font-size: 14px; }
-  .controls .chips { gap: 6px; }
-  .controls .chip { min-height: 34px; padding: 0 12px; font-size: 13px; }
-  .controls .seg { padding: 3px; }
-  .controls .seg button { min-height: 34px; font-size: 13px; }
-  .controls .styles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  .controls .style img { height: clamp(48px, 9vh, 80px); }
-  .controls .style span { padding: 5px 8px 6px; font-size: 12.5px; line-height: 1.25; }
-  .controls textarea { min-height: 40px; padding: 8px 12px; font-size: 14px; }
-  .controls .tips { font-size: 13px; }
-  .photo-col .go { padding: 12px 14px; gap: 8px; }
-  .photo-col .summary span { font-size: 12px; padding: 2px 8px; }
-  .photo-col .seg button { min-height: 34px; font-size: 13px; }
-  .photo-col .go .btn, .photo-col .loading { min-height: 48px; font-size: 16px; }
-  .photo-col .hint { font-size: 13px; }
-  .photo-col details { padding-top: 6px; }
-  .photo-col .result-here { display: flex; flex-direction: column; gap: 8px; }
-  .photo-col .compare { height: clamp(160px, 32vh, 380px); border-radius: 22px; }
-  .photo-col .actions .btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
-}
 @media (max-width: 600px) {
-  .drop, .preview { height: 300px; }
   .float.one { left: 12px; bottom: 12px; }
+}
+
+/* Studio: a large image workspace and one compact settings panel */
+.studio > .wrap { padding-top: 48px; padding-bottom: 48px; gap: 20px; }
+.studio-head { align-items: center; }
+.studio-head h2 { font-size: clamp(36px, 4vw, 52px); }
+.settings-btn { min-height: 44px; padding: 0 18px; font-size: 15px; }
+.tool { display: flex; flex-direction: column; flex-wrap: nowrap; gap: 20px; scroll-margin-top: 76px; }
+.workspace { min-width: 0; display: flex; flex-direction: column; --ar: 4 / 3; --arn: 1.3333; }
+.ws-stage { display: flex; flex-direction: column; gap: 12px; }
+.workspace .drop { height: auto; aspect-ratio: 4 / 3; }
+.drop-tip { margin-top: 6px; }
+.shot { position: relative; margin: 0; border-radius: 24px; overflow: hidden; background: var(--sage); aspect-ratio: var(--ar); }
+.shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shot .tag, .layer .tag { position: absolute; left: 14px; top: 14px; }
+.layer.after .tag { left: auto; right: 14px; }
+.tag-accent { background: var(--accent); color: #fff; }
+.ws-progress { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(36,33,29,.38); }
+.ws-progress .loading { width: auto; min-height: 52px; padding: 0 24px; font-size: 16px; }
+.ws-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.view-toggle { width: 260px; max-width: 100%; }
+.cost-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); font-size: 13px; font-weight: 700; }
+.cost-pill .cost { font-size: 16px; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.workspace .compare { height: auto; aspect-ratio: var(--ar); border-radius: 24px; }
+.ws-actions { gap: 8px; }
+.ws-actions .btn { min-height: 44px; padding: 0 16px; font-size: 14px; }
+
+.settings { display: flex; flex-direction: column; min-width: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 24px; }
+.settings-body { display: flex; flex-direction: column; gap: 18px; padding: 18px 18px 8px; }
+.settings .field { gap: 8px; }
+.settings .label { font-size: 14px; }
+.settings .chips { gap: 6px; }
+.settings .chip { min-height: 38px; padding: 0 14px; font-size: 14px; }
+.settings .seg { padding: 3px; }
+.settings .seg button { min-height: 38px; font-size: 13px; }
+.settings .styles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.settings .style img { height: 64px; }
+.settings .style span { padding: 6px 8px 7px; font-size: 13px; line-height: 1.25; }
+.settings textarea { font-size: 15px; padding: 10px 12px; }
+.more { border-top: 1px solid var(--line); padding-top: 6px; }
+.more summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; min-height: 44px; font-size: 15px; font-weight: 700; }
+.more summary::-webkit-details-marker { display: none; }
+.more summary::after { content: '+'; font-size: 22px; font-weight: 400; color: var(--muted); }
+.more[open] summary::after { content: '\2212'; }
+.more-body { display: flex; flex-direction: column; gap: 16px; padding: 6px 0 10px; }
+.settings-foot { position: sticky; bottom: 0; display: flex; flex-direction: column; gap: 8px; padding: 14px 18px calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--paper); border-top: 1px solid var(--line); border-radius: 0 0 24px 24px; }
+.settings-foot .btn, .settings-foot .loading { width: 100%; min-height: 54px; font-size: 16px; }
+.settings-foot .hint { margin: 0; }
+
+.settings-dialog { border: none; padding: 0; width: min(560px, calc(100% - 32px)); border-radius: 24px; background: var(--paper); color: var(--ink); box-shadow: 0 30px 80px rgba(36,33,29,.25); }
+.settings-dialog::backdrop { background: rgba(36,33,29,.45); }
+.settings-form { display: flex; flex-direction: column; gap: 18px; padding: 24px; }
+.dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.dialog-head h3 { font-size: 36px; }
+.settings-form > .btn { align-self: flex-end; }
+.keyrow .btn { min-height: 46px; padding: 0 16px; font-size: 14px; }
+
+@media (max-width: 600px) {
+  .pair { grid-template-columns: minmax(0, 1fr); }
+  .studio > .wrap { padding-top: 32px; padding-bottom: 32px; }
+}
+/* Desktop: the image is the hero; settings stay beside it with Generate always at the bottom */
+@media (min-width: 960px) {
+  .tool { flex-direction: row; align-items: flex-start; gap: 24px; }
+  .workspace { flex: 1 1 auto; position: sticky; top: 84px; }
+  .settings { flex: 0 0 380px; position: sticky; top: 84px; max-height: calc(100vh - 100px); }
+  .settings-body { overflow-y: auto; overscroll-behavior: contain; }
+  .workspace .drop, .shot.single, .workspace .compare { width: min(100%, calc((100vh - 190px) * var(--arn))); margin-inline: auto; }
+  .pair { width: min(100%, calc((100vh - 230px) * var(--arn) * 2 + 12px)); margin-inline: auto; }
 }
 </style>
 </head>
@@ -343,133 +361,182 @@ footer .logo { font-size: 24px; color: var(--ink); }
 
 <section id="studio" class="studio">
   <div class="wrap">
-    <div class="head">
+    <div class="head studio-head">
       <h2 class="serif">Design <em>studio</em></h2>
-      <p>Everything happens here, on one screen. Change any choice and generate again.</p>
+      <button type="button" class="btn btn-soft settings-btn" id="openSettings" aria-haspopup="dialog">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        Settings</button>
     </div>
 
     <div class="tool" id="tool">
-      <div class="photo-col">
-        <span class="label"><i>1</i>Your room photo</span>
-        <div id="dropArea">
+      <div class="workspace" id="workspace">
+        <!-- 1. Nothing uploaded yet -->
+        <div id="dropArea" class="ws-stage">
           <label class="drop" id="drop">
             <span class="drop-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
             <strong>Drop your room photo here</strong>
             <small>or click to choose a JPG or PNG</small>
+            <small class="drop-tip">Tip: shoot the whole room from a corner, in daylight.</small>
             <input type="file" id="file" accept="image/jpeg,image/png" aria-label="Upload a room photo">
           </label>
         </div>
-        <div id="previewArea" hidden>
-          <div class="preview">
+
+        <!-- 2. Photo uploaded (and kept visible while generating) -->
+        <div id="previewArea" class="ws-stage" hidden>
+          <figure class="shot single">
             <img id="previewImg" alt="Your uploaded room">
-            <button type="button" class="btn btn-soft" id="changePhoto">Change photo</button>
+            <figcaption class="tag">Your photo</figcaption>
+            <div class="ws-progress" hidden>
+              <div class="loading" role="status">
+                <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
+                <span>Designing your room... <span class="timer"></span></span>
+              </div>
+            </div>
+          </figure>
+          <div class="ws-bar">
+            <span class="tips">Pick your settings, then press Generate.</span>
+            <button type="button" class="btn btn-soft" id="changePhoto">Replace photo</button>
           </div>
         </div>
-        <div class="result-here" id="resultHere" hidden></div>
-        <p class="tips">Tip: stand in a corner and shoot the whole room in daylight for the best result.</p>
-        <div class="go">
-          <p class="summary" id="summary"></p>
-          <div class="seg seg-2" id="quality" role="group" aria-label="Image quality">
-            <button type="button" data-v="fast" aria-pressed="true">Fast · about 20–40 s</button>
-            <button type="button" data-v="hd" aria-pressed="false">HD 2K · about 1–2 min</button>
-          </div>
-          <button type="button" class="btn btn-accent" id="generate" disabled>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
-            Generate my design</button>
-          <div class="loading" id="loading" role="status" hidden>
-            <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
-            <span>Designing your room... <span class="timer"></span></span>
-          </div>
-          <p class="hint" id="hint">Upload a photo to start</p>
-          <p class="error" id="error" role="alert" hidden></p>
-          <details id="keyBox">
-            <summary>Your own Gemini API key <span id="keyState" class="tips">(optional)</span></summary>
-            <div class="keyrow">
-              <input type="text" id="apiKey" name="gemini-key-field" class="masked" placeholder="Paste your Gemini API key" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore aria-label="Gemini API key">
-              <button type="button" class="btn btn-soft" id="showKey" style="min-height:46px;padding:0 18px;font-size:14px" aria-pressed="false">Show</button>
-              <button type="button" class="btn btn-soft" id="clearKey" style="min-height:46px;padding:0 18px;font-size:14px">Clear</button>
-              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a key</a>
+
+        <!-- 3. Result: before and after -->
+        <div id="resultView" class="ws-stage" hidden>
+          <div class="ws-bar">
+            <div class="seg seg-2 view-toggle" id="viewToggle" role="group" aria-label="How to compare">
+              <button type="button" data-v="side" aria-pressed="true">Side by side</button>
+              <button type="button" data-v="slider" aria-pressed="false">Slider</button>
             </div>
-            <p class="keynote">Not needed: leave it empty to use the free designs (a daily limit applies). If you add your own key, it's saved only in this browser and you pay Google directly, usually a few cents per image.</p>
-          </details>
+            <div class="cost-pill" id="costBadge"></div>
+          </div>
+          <div class="pair" id="pair">
+            <figure class="shot">
+              <img id="beforeImg" alt="Your room before the makeover">
+              <figcaption class="tag">Before</figcaption>
+            </figure>
+            <figure class="shot">
+              <img id="afterImg" alt="Your room after the makeover">
+              <figcaption class="tag tag-accent" id="afterLabel">After</figcaption>
+              <div class="ws-progress" hidden>
+                <div class="loading" role="status">
+                  <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
+                  <span>Designing... <span class="timer"></span></span>
+                </div>
+              </div>
+            </figure>
+          </div>
+          <div class="compare" id="compare" hidden>
+            <div class="layer after" id="afterLayer"><span class="tag tag-accent">After</span></div>
+            <div class="layer before" id="beforeLayer"><span class="tag">Before</span></div>
+            <div class="bar" id="bar"></div>
+            <div class="knob" id="knob"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#24211D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></div>
+            <input type="range" id="slider" min="1" max="99" value="50" aria-label="Compare before and after">
+          </div>
+          <div class="actions ws-actions" id="resultActions">
+            <a class="btn btn-soft" id="download" download="makeover.png">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg>Download</a>
+            <button type="button" class="btn btn-soft" id="again">Try another style</button>
+            <button type="button" class="btn btn-soft" id="save">Save to my designs</button>
+            <button type="button" class="btn btn-soft" id="replaceAfter">Replace photo</button>
+          </div>
         </div>
       </div>
 
-      <div class="controls">
-        <section class="panel" id="panel-0" aria-labelledby="h-room">
-          <h3 class="panel-title" id="h-room"><b>2</b>Room</h3>
+      <aside class="settings" aria-label="Design settings">
+        <div class="settings-body">
           <fieldset class="field">
             <legend class="label">Room type</legend>
             <div class="chips" id="rooms"></div>
           </fieldset>
+          <fieldset class="field" id="styleField">
+            <legend class="label">Style</legend>
+            <div class="styles" id="styles"></div>
+          </fieldset>
           <fieldset class="field">
-            <legend class="label">How much should change?</legend>
+            <legend class="label">Makeover level</legend>
             <div class="seg" id="intensity">
               <button type="button" data-v="light" aria-pressed="false">Light refresh</button>
               <button type="button" data-v="full" aria-pressed="true">Full makeover</button>
               <button type="button" data-v="bold" aria-pressed="false">Bold &amp; creative</button>
             </div>
           </fieldset>
-        </section>
-
-        <section class="panel" id="panel-1" aria-labelledby="h-style">
-          <h3 class="panel-title" id="h-style"><b>3</b>Style</h3>
           <fieldset class="field">
-            <legend class="label">Style</legend>
-            <div class="styles" id="styles"></div>
-          </fieldset>
-          <fieldset class="field">
-            <legend class="label">Light &amp; mood</legend>
-            <div class="seg" id="mood">
-              <button type="button" data-v="day" aria-pressed="true">Daylight</button>
-              <button type="button" data-v="golden" aria-pressed="false">Golden hour</button>
-              <button type="button" data-v="evening" aria-pressed="false">Evening</button>
-            </div>
-          </fieldset>
-        </section>
-
-        <section class="panel" id="panel-2" aria-labelledby="h-details">
-          <h3 class="panel-title" id="h-details"><b>4</b>Details</h3>
-          <fieldset class="field">
-            <legend class="label">Budget</legend>
-            <div class="seg" id="budget">
-              <button type="button" data-v="budget" aria-pressed="false">Affordable</button>
-              <button type="button" data-v="mid" aria-pressed="true">Mid-range</button>
-              <button type="button" data-v="luxury" aria-pressed="false">Luxury</button>
-            </div>
-          </fieldset>
-          <fieldset class="field">
-            <legend class="label">Keep these <small>optional</small></legend>
+            <legend class="label">Keep existing items <small>optional</small></legend>
             <div class="chips" id="keepChips"></div>
-            <label for="keep" class="tips">Anything else? Describe it.</label>
-            <textarea id="keep" rows="1" placeholder="e.g. my grey sofa, the wooden dining table"></textarea>
           </fieldset>
-        </section>
-
-      </div>
+          <details class="more" id="moreOptions">
+            <summary>More options</summary>
+            <div class="more-body">
+              <fieldset class="field">
+                <legend class="label">Lighting</legend>
+                <div class="seg" id="mood">
+                  <button type="button" data-v="day" aria-pressed="true">Daylight</button>
+                  <button type="button" data-v="golden" aria-pressed="false">Golden hour</button>
+                  <button type="button" data-v="evening" aria-pressed="false">Evening</button>
+                </div>
+              </fieldset>
+              <fieldset class="field">
+                <legend class="label">Budget</legend>
+                <div class="seg" id="budget">
+                  <button type="button" data-v="budget" aria-pressed="false">Affordable</button>
+                  <button type="button" data-v="mid" aria-pressed="true">Mid-range</button>
+                  <button type="button" data-v="luxury" aria-pressed="false">Luxury</button>
+                </div>
+              </fieldset>
+              <fieldset class="field">
+                <legend class="label">Output quality</legend>
+                <div class="seg seg-2" id="quality">
+                  <button type="button" data-v="fast" aria-pressed="true">Fast · 20–40 s</button>
+                  <button type="button" data-v="hd" aria-pressed="false">HD 2K · 1–2 min</button>
+                </div>
+              </fieldset>
+              <div class="field">
+                <label for="keep" class="label">Extra notes</label>
+                <textarea id="keep" rows="2" placeholder="e.g. keep my grey sofa, add a reading corner by the window"></textarea>
+              </div>
+            </div>
+          </details>
+        </div>
+        <div class="settings-foot">
+          <p class="error" id="error" role="alert" hidden></p>
+          <button type="button" class="btn btn-accent" id="generate" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+            Generate my design</button>
+          <div class="loading" id="loading" role="status" hidden>
+            <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
+            <span>Designing... <span class="timer"></span></span>
+          </div>
+          <p class="hint" id="hint">Upload a photo to start</p>
+        </div>
+      </aside>
     </div>
   </div>
 </section>
 
+<dialog class="settings-dialog" id="settingsDialog" aria-labelledby="settingsTitle">
+  <form method="dialog" class="settings-form">
+    <div class="dialog-head">
+      <h3 class="serif" id="settingsTitle">Settings</h3>
+      <button type="submit" class="icon-btn" aria-label="Close settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div id="keyBox" class="field">
+      <label for="apiKey" class="label">Your own Gemini API key <span id="keyState" class="tips">(optional)</span></label>
+      <div class="keyrow">
+        <input type="text" id="apiKey" name="gemini-key-field" class="masked" placeholder="Paste your Gemini API key" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore>
+        <button type="button" class="btn btn-soft" id="showKey" aria-pressed="false">Show</button>
+        <button type="button" class="btn btn-soft" id="clearKey">Clear</button>
+      </div>
+      <p class="keynote">Not needed: leave it empty to use the free designs (a daily limit applies). If you add your own key, it's saved only in this browser and you pay Google directly, usually a few cents per image. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a key</a></p>
+    </div>
+    <button type="submit" class="btn btn-accent">Done</button>
+  </form>
+</dialog>
+
 <section id="result" class="wrap result">
   <div class="head">
-    <h2 class="serif">Before <em>&amp;</em> after</h2>
-    <div class="actions" id="resultActions" hidden>
-      <a class="btn btn-soft" id="download" download="makeover.png">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg>Download</a>
-      <button type="button" class="btn btn-soft" id="again">Try another style</button>
-      <button type="button" class="btn btn-accent" id="save">Save to my designs</button>
-    </div>
+    <h2 class="serif">Refine <em>&amp;</em> explore</h2>
   </div>
-  <p class="empty" id="noResult">Your design will appear here. Drag the slider to compare.</p>
-  <div class="compare" id="compare" hidden>
-    <div class="layer after" id="afterLayer"><span class="tag" id="afterLabel">Makeover</span></div>
-    <div class="layer before" id="beforeLayer"><span class="tag">Before</span></div>
-    <div class="bar" id="bar"></div>
-    <div class="knob" id="knob"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#24211D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></div>
-    <input type="range" id="slider" min="1" max="99" value="50" aria-label="Compare before and after">
-    <div class="cost-badge" id="costBadge"></div>
-  </div>
+  <p class="empty" id="noResult">After you generate a design, refine it, see it from other angles and read the designer notes here.</p>
   <div class="versions" id="versions" hidden></div>
   <div class="refine" id="refineBox" hidden>
     <div>
@@ -612,7 +679,7 @@ var KEEP_ITEMS = ['Sofa', 'Rug', 'Bed', 'Dining table', 'Curtains', 'Plants', 'A
 var KEY = 'makeover-gallery';
 var KEY_STORE = 'makeover-gemini-key';
 var MODEL = 'gemini-2.5-flash-image';
-var state = { photo: '', room: 'living', style: '', intensity: 'full', budget: 'mid', mood: 'day', quality: 'fast', tab: 0, keep: [], result: '', notes: [], versions: [], vIndex: 0, resultStyle: '', saved: false };
+var state = { photo: '', room: 'living', style: '', intensity: 'full', budget: 'mid', mood: 'day', quality: 'fast', view: 'side', keep: [], result: '', notes: [], versions: [], vIndex: 0, resultStyle: '', saved: false };
 var $ = function (id) { return document.getElementById(id); };
 var styleById = function (id) { return STYLES.find(function (s) { return s.id === id; }); };
 var roomById = function (id) { return ROOMS.find(function (r) { return r.id === id; }); };
@@ -665,29 +732,7 @@ var INTENSITY_NAMES = { light: 'Light refresh', full: 'Full makeover', bold: 'Bo
 var MOOD_NAMES = { day: 'Daylight', golden: 'Golden hour', evening: 'Evening' };
 var BUDGET_NAMES = { budget: 'Affordable', mid: 'Mid-range', luxury: 'Luxury' };
 
-function renderSummary() {
-  var s = state.style && styleById(state.style);
-  var keep = state.keep.slice();
-  if ($('keep').value.trim()) keep.push('your notes');
-  var items = [
-    { text: state.photo ? 'Photo added' : 'No photo yet', missing: !state.photo },
-    { text: roomById(state.room).name },
-    { text: s ? s.name : 'Pick a style', missing: !s },
-    { text: INTENSITY_NAMES[state.intensity] },
-    { text: MOOD_NAMES[state.mood] },
-    { text: BUDGET_NAMES[state.budget] },
-    { text: keep.length ? 'Keep: ' + keep.join(', ') : 'Nothing kept' }
-  ];
-  var box = $('summary');
-  box.innerHTML = '';
-  items.forEach(function (it) {
-    var span = document.createElement('span');
-    span.textContent = it.text;
-    if (it.missing) span.className = 'missing';
-    box.appendChild(span);
-  });
-}
-$('keep').addEventListener('input', renderSummary);
+
 
 document.querySelectorAll('#quality button').forEach(function (b) {
   b.addEventListener('click', function () { state.quality = b.dataset.v; refresh(); });
@@ -697,7 +742,16 @@ document.querySelectorAll('#quality button').forEach(function (b) {
 function setPhoto(file) {
   if (!file || !/^image\/(jpeg|png)$/.test(file.type)) { showError('Please choose a JPG or PNG photo.'); return; }
   var reader = new FileReader();
-  reader.onload = function () { state.photo = reader.result; showError(''); refresh(); };
+  // A new photo starts a new design, so the old result and its versions are cleared
+  reader.onload = function () {
+    state.photo = reader.result;
+    state.result = '';
+    state.versions = [];
+    state.angles = [];
+    renderAngles();
+    showError('');
+    refresh();
+  };
   reader.readAsDataURL(file);
 }
 $('file').addEventListener('change', function (e) { setPhoto(e.target.files[0]); e.target.value = ''; });
@@ -726,7 +780,6 @@ function friendlyError(e) {
 var freeLeft = null;
 function getKey() { return $('apiKey').value.trim(); }
 try { $('apiKey').value = localStorage.getItem(KEY_STORE) || ''; keyStored = true; } catch (e) {}
-$('keyBox').open = false;
 $('clearKey').addEventListener('click', function () {
   $('apiKey').value = '';
   try { localStorage.removeItem(KEY_STORE); } catch (e) {}
@@ -740,7 +793,7 @@ $('showKey').addEventListener('click', function () {
   $('showKey').setAttribute('aria-pressed', String(show));
 });
 function openKeyField() {
-  $('keyBox').open = true;
+  openSettings();
   $('apiKey').focus();
   $('apiKey').select();
 }
@@ -947,6 +1000,7 @@ $('generate').addEventListener('click', async function () {
   showError('');
   $('generate').hidden = true;
   $('loading').hidden = false;
+  setBusy(true);
   try {
     var hd = state.quality === 'hd';
     var photo = await resizeImage(state.photo, hd ? 2048 : 1536, 0.9);
@@ -963,13 +1017,14 @@ $('generate').addEventListener('click', async function () {
     state.saved = false;
     $('slider').value = 50;
     refresh();
-    if (!WIDE.matches) $('result').scrollIntoView({ behavior: 'smooth' });
+    if (!DESKTOP.matches) $('workspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
     showError(friendlyError(e));
     if (/not valid/i.test(e.message)) openKeyField();
   } finally {
     $('generate').hidden = false;
     $('loading').hidden = true;
+    setBusy(false);
   }
 });
 
@@ -1162,7 +1217,7 @@ function setSlider(v) {
 $('slider').addEventListener('input', function (e) { setSlider(Number(e.target.value)); });
 
 $('again').addEventListener('click', function () {
-  $('panel-1').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('styleField').scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
 
 // Saved designs live in IndexedDB in this browser, with room for hundreds of full-size images.
@@ -1373,16 +1428,16 @@ function refresh() {
   pressAll('#budget button', function (b) { return b.dataset.v === state.budget; });
   pressAll('#mood button', function (b) { return b.dataset.v === state.mood; });
   pressAll('#quality button', function (b) { return b.dataset.v === state.quality; });
-  renderSummary();
 
+  var has = !!state.result;
   $('dropArea').hidden = !!state.photo;
-  $('previewArea').hidden = !state.photo;
-  if (state.photo) $('previewImg').src = state.photo;
+  $('previewArea').hidden = !state.photo || has;
+  $('resultView').hidden = !has;
+  if (state.photo && $('previewImg').getAttribute('src') !== state.photo) $('previewImg').src = state.photo;
 
   var hasKey = !!getKey();
   // Gemini keys are one unbroken string; spaces or a very short value mean something else was pasted
   var keyLooksWrong = hasKey && (/\s/.test(getKey()) || getKey().length < 30);
-  if (keyLooksWrong) $('keyBox').open = true;
   // No key needed: without one, designs go through our free server (with a daily limit)
   var ready = !!state.photo && !!state.style;
   $('generate').disabled = !ready;
@@ -1392,15 +1447,17 @@ function refresh() {
     : !state.style ? 'Now pick a style'
     : (state.quality === 'hd' ? 'HD takes about 1 to 2 minutes' : 'Takes about 20 to 40 seconds') + freeNote;
 
-  var has = !!state.result;
   $('noResult').hidden = has;
-  $('compare').hidden = !has;
-  $('resultActions').hidden = !has;
+  pressAll('#viewToggle button', function (b) { return b.dataset.v === state.view; });
+  $('pair').hidden = !has || state.view !== 'side';
+  $('compare').hidden = !has || state.view !== 'slider';
   $('refineBox').hidden = !has;
   $('anglesBox').hidden = !has;
   renderVersions();
   if (has) {
-    $('afterLabel').textContent = styleById(state.resultStyle).name;
+    $('afterLabel').textContent = 'After · ' + styleById(state.resultStyle).name;
+    if ($('beforeImg').getAttribute('src') !== state.photo) $('beforeImg').src = state.photo;
+    if ($('afterImg').getAttribute('src') !== state.result) $('afterImg').src = state.result;
     $('afterLayer').style.backgroundImage = 'url(' + state.result + ')';
     $('beforeLayer').style.backgroundImage = 'url(' + state.photo + ')';
     $('download').href = state.result;
@@ -1421,27 +1478,30 @@ function refresh() {
   });
   $('save').textContent = state.saved ? 'Saved' : 'Save to my designs';
   renderGallery();
-  placeResult();
 }
-// On wide screens the result takes the photo's place, so photo, result and options share one screen.
-// Marker comments remember where the slider and buttons live in the result section.
-var WIDE = window.matchMedia('(min-width: 1100px)');
-var compareHome = document.createComment('compare-home');
-var actionsHome = document.createComment('actions-home');
-$('compare').before(compareHome);
-$('resultActions').before(actionsHome);
-function placeResult() {
-  var beside = WIDE.matches && !!state.result;
-  if (beside && $('compare').parentNode !== $('resultHere')) {
-    $('resultHere').append($('compare'), $('resultActions'));
-  } else if (!beside && $('compare').parentNode === $('resultHere')) {
-    compareHome.after($('compare'));
-    actionsHome.after($('resultActions'));
-  }
-  $('resultHere').hidden = !beside;
-  if (beside) $('previewArea').hidden = true;
+// Workspace helpers: busy overlay, compare view, replace photo, Settings dialog, image shape
+var DESKTOP = window.matchMedia('(min-width: 960px)');
+function setBusy(on) {
+  document.querySelectorAll('.ws-progress').forEach(function (el) { el.hidden = !on; });
 }
-WIDE.addEventListener('change', refresh);
+document.querySelectorAll('#viewToggle button').forEach(function (b) {
+  b.addEventListener('click', function () { state.view = b.dataset.v; refresh(); });
+});
+$('replaceAfter').addEventListener('click', function () { $('file').click(); });
+function openSettings() {
+  var d = $('settingsDialog');
+  if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else { d.setAttribute('open', ''); }
+  $('apiKey').focus();
+}
+$('openSettings').addEventListener('click', openSettings);
+// Size every frame to the photo's own shape so nothing is stretched or cropped
+$('previewImg').addEventListener('load', function () {
+  var w = this.naturalWidth, h = this.naturalHeight;
+  if (!w || !h) return;
+  $('workspace').style.setProperty('--ar', w + ' / ' + h);
+  $('workspace').style.setProperty('--arn', String(w / h));
+});
+
 
 // Seconds counter on every visible loading state, so long waits feel accounted for
 setInterval(function () {
