@@ -684,6 +684,16 @@ $('changePhoto').addEventListener('click', function () { $('file').click(); });
 // API key (kept in this browser only)
 var keyStored = false;
 var PROXY = 'https://makeover-proxy.makeover-group36.workers.dev';
+var LIVE_SITE = 'https://atefnansi-max.github.io/interior-makeover/';
+
+// Turn a network failure into a message that says what to do
+function friendlyError(e) {
+  if (e.message !== 'Failed to fetch') return e.message;
+  if (!getKey() && location.hostname !== 'atefnansi-max.github.io') {
+    return 'Free designs only work on the live site. Open ' + LIVE_SITE + ' (this copy is a local file).';
+  }
+  return getKey() ? 'Could not reach Gemini. Check your internet connection.' : 'Could not reach the Makeover server. Check your internet connection and try again.';
+}
 var freeLeft = null;
 function getKey() { return $('apiKey').value.trim(); }
 try { $('apiKey').value = localStorage.getItem(KEY_STORE) || ''; keyStored = true; } catch (e) {}
@@ -926,7 +936,7 @@ $('generate').addEventListener('click', async function () {
     refresh();
     $('result').scrollIntoView({ behavior: 'smooth' });
   } catch (e) {
-    showError(e.message === 'Failed to fetch' ? 'Could not reach Gemini. Check your internet connection.' : e.message);
+    showError(friendlyError(e));
     if (/not valid/i.test(e.message)) openKeyField();
   } finally {
     $('generate').hidden = false;
@@ -970,7 +980,7 @@ async function applyRefine() {
     showVersion(state.versions.length - 1);
     $('refineText').value = '';
   } catch (e) {
-    showRefineError(e.message === 'Failed to fetch' ? 'Could not reach Gemini. Check your internet connection.' : e.message);
+    showRefineError(friendlyError(e));
   } finally {
     $('refineBtn').hidden = false;
     $('refineLoading').hidden = true;
@@ -1047,7 +1057,7 @@ async function makeAngle(a) {
     state.angles = [{ img: out.img, name: a.name }].concat(state.angles || []);
     renderAngles();
   } catch (e) {
-    showAngleError(e.message === 'Failed to fetch' ? 'Could not reach Gemini. Check your internet connection.' : e.message);
+    showAngleError(friendlyError(e));
   } finally {
     $('angleChips').hidden = false;
     $('angleLoading').hidden = true;
