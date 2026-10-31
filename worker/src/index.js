@@ -9,7 +9,7 @@ const ALLOWED_MODELS = ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', TEXT
 const MAX_BODY_BYTES = 12 * 1024 * 1024;
 const TOKENS_PER_IMAGE = 10;
 const GUEST_TOKENS = 50;
-const SIGN_IN_BONUS = 50; // "5 more free designs" when a guest signs in with Google for the first time
+const ACCOUNT_TOKENS = 50; // a new Google account's own starting balance ("5 more free designs"), separate from any guest balance
 const SESSION_DAYS = 30;
 
 const LIBRARY_RE = /^[a-f0-9]{32}$/;
@@ -126,17 +126,17 @@ async function authApi(request, env, url, headers) {
     const guest = lib ? await env.DB.prepare('SELECT * FROM accounts WHERE id = ? AND kind = ?').bind(lib, 'guest').first() : null;
     const existing = await env.DB.prepare('SELECT * FROM accounts WHERE id = ?').bind(id).first();
 
+    // Guest and account balances are fully independent: a new account gets its own starting tokens,
+    // an existing account keeps its balance, and the guest's balance is never read or changed here
     if (!existing) {
-      // New account: keep the guest's remaining tokens and add the sign-in bonus once
-      const start = (guest && !guest.merged_into ? guest.tokens : GUEST_TOKENS) + SIGN_IN_BONUS;
       await env.DB.prepare('INSERT INTO accounts (id, kind, email, name, picture, tokens, bonus_claimed, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)')
-        .bind(id, 'google', clean(info.email, 200), clean(info.name || info.given_name, 120), clean(info.picture, 500), start, now).run();
+        .bind(id, 'google', clean(info.email, 200), clean(info.name || info.given_name, 120), clean(info.picture, 500), ACCOUNT_TOKENS, now).run();
     } else {
       await env.DB.prepare('UPDATE accounts SET email = ?, name = ?, picture = ? WHERE id = ?')
         .bind(clean(info.email, 200), clean(info.name || info.given_name, 120), clean(info.picture, 500), id).run();
     }
-    // The guest's designs move to the account; its tokens were carried over (first sign-in) or are not added again
-    if (guest && !guest.merged_into) {
+    // The guest's designs (not its tokens) move to the account so they are kept across devices
+    if (guest) {
       // Images saved before image_key existed live under "library:id"; give them their own key so they open on any device
       const { results: legacy } = await env.DB.prepare('SELECT id FROM designs WHERE library = ? AND image_key IS NULL').bind(lib).all();
       for (const row of legacy) {
@@ -146,7 +146,6 @@ async function authApi(request, env, url, headers) {
         await env.DB.prepare('UPDATE designs SET image_key = ? WHERE id = ?').bind('img:' + row.id, row.id).run();
       }
       await env.DB.prepare('UPDATE designs SET library = ? WHERE library = ?').bind(id, lib).run();
-      await env.DB.prepare('UPDATE accounts SET tokens = 0, merged_into = ? WHERE id = ?').bind(id, lib).run();
     }
     const session = randomHex(32);
     const expires = new Date(Date.now() + SESSION_DAYS * 86400000).toISOString();
