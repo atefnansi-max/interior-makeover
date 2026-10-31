@@ -248,6 +248,43 @@ footer .logo { font-size: 24px; color: var(--ink); }
   .panel { padding: 18px 20px; gap: 18px; }
   .style img { height: 80px; }
 }
+/* Wide screens: no scrolling at all. Options sit in two compact columns beside the photo */
+@media (min-width: 1100px) {
+  .studio > .wrap { padding-top: 24px; padding-bottom: 24px; gap: 16px; }
+  .studio .head h2 { font-size: 44px; }
+  .tool { gap: 20px; height: calc(100vh - 96px); min-height: 0; }
+  .photo-col, .controls { overflow: hidden; padding-right: 0; }
+  .photo-col { flex: 0 0 38%; gap: 10px; }
+  .photo-col .tips { display: none; }
+  .drop, .preview { height: clamp(160px, 32vh, 380px); }
+  .controls { flex: 1 1 62%; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; gap: 14px; align-content: start; }
+  #panel-0 { grid-column: 1; grid-row: 1; }
+  #panel-2 { grid-column: 1; grid-row: 2; }
+  #panel-1 { grid-column: 2; grid-row: 1 / span 2; }
+  .panel { padding: 14px 16px; gap: 12px; border-radius: 18px; }
+  .panel-title { font-size: 26px; }
+  .panel-title b { width: 28px; height: 28px; font-size: 13px; }
+  .controls .field { gap: 8px; }
+  .controls .label { font-size: 14px; }
+  .controls .chips { gap: 6px; }
+  .controls .chip { min-height: 34px; padding: 0 12px; font-size: 13px; }
+  .controls .seg { padding: 3px; }
+  .controls .seg button { min-height: 34px; font-size: 13px; }
+  .controls .styles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .controls .style img { height: clamp(48px, 9vh, 80px); }
+  .controls .style span { padding: 5px 8px 6px; font-size: 12.5px; line-height: 1.25; }
+  .controls textarea { min-height: 40px; padding: 8px 12px; font-size: 14px; }
+  .controls .tips { font-size: 13px; }
+  .photo-col .go { padding: 12px 14px; gap: 8px; }
+  .photo-col .summary span { font-size: 12px; padding: 2px 8px; }
+  .photo-col .seg button { min-height: 34px; font-size: 13px; }
+  .photo-col .go .btn, .photo-col .loading { min-height: 48px; font-size: 16px; }
+  .photo-col .hint { font-size: 13px; }
+  .photo-col details { padding-top: 6px; }
+  .photo-col .result-here { display: flex; flex-direction: column; gap: 8px; }
+  .photo-col .compare { height: clamp(160px, 32vh, 380px); border-radius: 22px; }
+  .photo-col .actions .btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
+}
 @media (max-width: 600px) {
   .drop, .preview { height: 300px; }
   .float.one { left: 12px; bottom: 12px; }
@@ -328,6 +365,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
             <button type="button" class="btn btn-soft" id="changePhoto">Change photo</button>
           </div>
         </div>
+        <div class="result-here" id="resultHere" hidden></div>
         <p class="tips">Tip: stand in a corner and shoot the whole room in daylight for the best result.</p>
         <div class="go">
           <p class="summary" id="summary"></p>
@@ -404,7 +442,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
             <legend class="label">Keep these <small>optional</small></legend>
             <div class="chips" id="keepChips"></div>
             <label for="keep" class="tips">Anything else? Describe it.</label>
-            <textarea id="keep" rows="2" placeholder="e.g. my grey sofa, the wooden dining table"></textarea>
+            <textarea id="keep" rows="1" placeholder="e.g. my grey sofa, the wooden dining table"></textarea>
           </fieldset>
         </section>
 
@@ -925,7 +963,7 @@ $('generate').addEventListener('click', async function () {
     state.saved = false;
     $('slider').value = 50;
     refresh();
-    $('result').scrollIntoView({ behavior: 'smooth' });
+    if (!WIDE.matches) $('result').scrollIntoView({ behavior: 'smooth' });
   } catch (e) {
     showError(friendlyError(e));
     if (/not valid/i.test(e.message)) openKeyField();
@@ -1383,7 +1421,28 @@ function refresh() {
   });
   $('save').textContent = state.saved ? 'Saved' : 'Save to my designs';
   renderGallery();
+  placeResult();
 }
+// On wide screens the result takes the photo's place, so photo, result and options share one screen.
+// Marker comments remember where the slider and buttons live in the result section.
+var WIDE = window.matchMedia('(min-width: 1100px)');
+var compareHome = document.createComment('compare-home');
+var actionsHome = document.createComment('actions-home');
+$('compare').before(compareHome);
+$('resultActions').before(actionsHome);
+function placeResult() {
+  var beside = WIDE.matches && !!state.result;
+  if (beside && $('compare').parentNode !== $('resultHere')) {
+    $('resultHere').append($('compare'), $('resultActions'));
+  } else if (!beside && $('compare').parentNode === $('resultHere')) {
+    compareHome.after($('compare'));
+    actionsHome.after($('resultActions'));
+  }
+  $('resultHere').hidden = !beside;
+  if (beside) $('previewArea').hidden = true;
+}
+WIDE.addEventListener('change', refresh);
+
 // Seconds counter on every visible loading state, so long waits feel accounted for
 setInterval(function () {
   document.querySelectorAll('.loading').forEach(function (l) {
