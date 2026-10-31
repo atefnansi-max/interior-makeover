@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Makeoverly · AI Interior Studio</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
+<script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <link rel="apple-touch-icon" href="assets/logo-mark.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -251,6 +252,40 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .icon-btn { width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; background: transparent; color: var(--muted); text-decoration: none; }
 .icon-btn:hover { background: var(--ground); color: var(--ink); }
 
+/* Make 3D */
+.make3d { min-height: 40px; padding: 0 16px; font-size: 14px; gap: 8px; }
+.make3d small { font-size: 12px; font-weight: 600; opacity: .8; }
+.make3d[aria-pressed="true"] { box-shadow: 0 0 0 3px rgba(122,15,36,.2); }
+.stage3d { position: relative; border-radius: 24px; overflow: hidden; background: #EFE8DD; aspect-ratio: var(--ar); min-height: 340px; }
+.canvas3d { position: absolute; inset: 0; }
+.canvas3d canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.canvas3d canvas:active { cursor: grabbing; }
+.tools3d { position: absolute; left: 12px; top: 12px; display: flex; flex-wrap: wrap; gap: 8px; z-index: 2; }
+.tools3d .btn { min-height: 40px; padding: 0 14px; font-size: 14px; gap: 8px; box-shadow: 0 4px 14px rgba(36,33,29,.12); }
+.refs3d { position: absolute; right: 12px; top: 12px; display: flex; gap: 6px; z-index: 2; }
+.refs3d img { width: 54px; height: 40px; object-fit: cover; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(36,33,29,.18); }
+.hint3d { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); margin: 0; padding: 6px 14px; border-radius: 999px; background: rgba(255,255,255,.92); color: var(--muted); font-size: 12.5px; white-space: nowrap; pointer-events: none; z-index: 2; }
+.progress3d { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(252,247,240,.95); }
+.progress-card { width: min(440px, 100%); display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid var(--line); border-radius: 20px; background: var(--paper); box-shadow: 0 16px 40px rgba(36,33,29,.12); }
+.progress-card h3 { margin: 0; font-size: 28px; }
+.steps3d { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.steps3d li { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 15px; }
+.steps3d li i { width: 20px; text-align: center; color: #CFC6BA; }
+.steps3d li.active { color: var(--ink); font-weight: 700; }
+.steps3d li.active i, .steps3d li.done i { color: var(--accent); }
+.thumbs3d { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.thumbs3d figure { margin: 0; display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); text-align: center; }
+.thumbs3d .ph { aspect-ratio: 4 / 3; border-radius: 8px; background: var(--ground) center / cover no-repeat; border: 1px solid var(--line); }
+.thumbs3d .ph.wait { background-image: linear-gradient(90deg, var(--ground), #F1E7DA, var(--ground)); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+.progress-card .error { margin: 0; }
+.progress-card .keynote { margin: 0; }
+@media (max-width: 600px) {
+  .refs3d { display: none; }
+  .hint3d { font-size: 11.5px; }
+  .tools3d .btn span { display: none; }
+}
+
 /* Tokens, sign-in and dashboard */
 nav a, nav button { white-space: nowrap; }
 @media (max-width: 1000px) { nav { gap: 16px; } nav a.nl { display: none; } }
@@ -369,7 +404,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
   .workspace { flex: 1 1 auto; position: sticky; top: 84px; }
   .settings { flex: 0 0 380px; position: sticky; top: 84px; max-height: calc(100vh - 100px); }
   .settings-body { overflow-y: auto; overscroll-behavior: contain; }
-  .workspace .drop, .shot.single, .workspace .compare { width: min(100%, calc((100vh - 190px) * var(--arn))); margin-inline: auto; }
+  .workspace .drop, .shot.single, .workspace .compare, .workspace .stage3d { width: min(100%, calc((100vh - 190px) * var(--arn))); margin-inline: auto; }
   .pair { width: min(100%, calc((100vh - 230px) * var(--arn) * 2 + 12px)); margin-inline: auto; }
 }
 </style>
@@ -473,6 +508,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
               <button type="button" data-v="side" aria-pressed="true"><i class="fa-solid fa-table-columns" aria-hidden="true"></i> <span>Side by side</span></button>
               <button type="button" data-v="slider" aria-pressed="false"><i class="fa-solid fa-arrows-left-right" aria-hidden="true"></i> <span>Slider</span></button>
             </div>
+            <button type="button" class="btn btn-accent make3d" id="make3dBtn" aria-pressed="false"><i class="fa-solid fa-cube" aria-hidden="true"></i> <span id="make3dLabel">Make 3D</span> <small id="make3dCost"></small></button>
             <div class="cost-pill" id="costBadge"></div>
           </div>
           <div class="stage-wrap">
@@ -498,6 +534,32 @@ footer .logo { font-size: 24px; color: var(--ink); }
             <div class="bar" id="bar"></div>
             <div class="knob" id="knob"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#24211D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></div>
             <input type="range" id="slider" min="1" max="99" value="50" aria-label="Compare before and after">
+          </div>
+          <div class="stage3d" id="stage3d" hidden>
+            <div class="canvas3d" id="canvas3d" role="img" aria-label="Interactive 3D model of your redesigned room"></div>
+            <div class="tools3d">
+              <button type="button" class="btn btn-soft" id="back2d"><i class="fa-solid fa-image" aria-hidden="true"></i><span>Back to 2D</span></button>
+              <button type="button" class="btn btn-soft" id="reset3d" aria-label="Reset the 3D view"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i><span>Reset view</span></button>
+            </div>
+            <div class="refs3d" id="refs3d" title="Built from these views"></div>
+            <p class="hint3d" id="hint3d">Drag to rotate · Scroll or pinch to zoom · Right-drag or two fingers to pan</p>
+            <div class="progress3d" id="progress3d" hidden>
+              <div class="progress-card" role="status" aria-live="polite">
+                <h3 class="serif">Making your room <em>3D</em></h3>
+                <ol class="steps3d">
+                  <li id="step3dViews"><i class="fa-regular fa-circle" aria-hidden="true"></i><span>Drawing views of the room <b id="views3dCount"></b></span></li>
+                  <li id="step3dLayout"><i class="fa-regular fa-circle" aria-hidden="true"></i><span>Reading the layout from all views</span></li>
+                  <li id="step3dBuild"><i class="fa-regular fa-circle" aria-hidden="true"></i><span>Building the 3D room</span></li>
+                </ol>
+                <div class="thumbs3d" id="thumbs3d"></div>
+                <p class="keynote" id="note3d"></p>
+                <p class="error" id="error3d" role="alert" hidden></p>
+                <div class="actions" id="retry3dRow" hidden>
+                  <button type="button" class="btn btn-accent" id="retry3d">Try again</button>
+                  <button type="button" class="btn btn-soft" id="cancel3d">Back to 2D</button>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="rail" id="resultActions" role="toolbar" aria-label="Design actions">
             <a class="rail-btn" id="download" download="makeover.png" aria-label="Download"><i class="fa-solid fa-download" aria-hidden="true"></i><span>Download</span></a>
@@ -1373,6 +1435,193 @@ $('lightboxClose').addEventListener('click', closeLightbox);
 $('lightbox').addEventListener('click', function (e) { if (e.target === $('lightbox')) closeLightbox(); });
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('lightbox').hidden) closeLightbox(); });
 
+// ---------- Make 3D ----------
+// 1) Gemini draws the redesigned room from four more viewpoints (the design itself is the front view).
+// 2) A text model reads all five views together and returns the room as JSON: size, walls, windows,
+//    doors and every main piece with its position, size, rotation and colors.
+// 3) room3d.js rebuilds that room in Three.js with orbit, zoom and pan.
+var VIEWS3D = [
+  { id: 'left', name: 'Left side', view: 'standing near the left wall of the room (as seen in this photo) and looking across toward the right wall, eye level about 150 cm, wide-angle 24 mm lens' },
+  { id: 'right', name: 'Right side', view: 'standing near the right wall of the room (as seen in this photo) and looking across toward the left wall, eye level about 150 cm, wide-angle 24 mm lens' },
+  { id: 'opposite', name: 'Opposite side', view: 'from the far end of the room looking back toward where the original camera stood, so the wall behind the original camera is now in view, eye level, wide-angle 24 mm lens' },
+  { id: 'wide', name: 'Wide room view', view: 'from high up in a ceiling corner, a wide three-quarter top-down view that shows the whole floor plan, every piece of furniture and all walls, 16 mm lens' }
+];
+var LAYOUT_MODEL = 'gemini-2.5-flash';
+var room3d = { forResult: null, views: {}, spec: null };
+var viewer3d = null, viewerFor = null, busy3d = false;
+
+function buildLayoutPrompt(names) {
+  return [
+    'You are an interior architect measuring a room so it can be rebuilt as a 3D model.',
+    'All images show the SAME redesigned room. Image 1 is the main view. ' + names.map(function (n, i) { return 'Image ' + (i + 2) + ' is the ' + n.toLowerCase(); }).join('. ') + '.',
+    'Use all images together to work out the real size of the room, its walls, windows and doors, and every main piece of furniture. Reply with JSON only.',
+    'COORDINATES in meters. Origin at the center of the floor. x grows to the right as seen in image 1; z grows toward the camera of image 1. The back wall (the one facing the camera in image 1) is at z = -depth/2, the front wall (behind the camera of image 1) at z = +depth/2, the left wall at x = -width/2 and the right wall at x = +width/2.',
+    'ROTATION in degrees around the vertical axis: 0 means the object\'s front faces +z (toward the camera of image 1), 90 faces +x, -90 faces -x, 180 faces the back wall. A sofa against the left wall facing into the room has rotation 90.',
+    'OFFSET for openings and wall pieces is measured along that wall from its left end, as seen when standing inside the room facing that wall.',
+    'JSON shape: {"room":{"width":n,"depth":n,"height":n},"walls":{"default":"#hex","back":"#hex","left":"#hex","right":"#hex","front":"#hex"},"floor":{"material":"wood|tile|stone|marble|carpet|concrete","color":"#hex"},"ceiling_color":"#hex","trim_color":"#hex","time_of_day":"day|golden|evening",' +
+      '"openings":[{"type":"window|door|arch|opening","wall":"back|left|right|front","offset":n,"width":n,"height":n,"sill":n,"frame_color":"#hex"}],' +
+      '"objects":[{"type":"...","label":"...","x":n,"z":n,"y":n,"width":n,"depth":n,"height":n,"rotation":n,"color":"#hex","secondary_color":"#hex","material":"fabric|wood|metal|brass|glass|marble|stone|leather|rattan|ceramic","shape":"rect|round","wall":"...","offset":n}]}',
+    'Object type is exactly one of: sofa, armchair, chair, stool, coffee_table, side_table, dining_table, desk, console_table, nightstand, sideboard, tv_unit, dresser, wardrobe, bookshelf, bed, rug, plant, floor_lamp, table_lamp, pendant_light, chandelier, ottoman, bench, fireplace, kitchen_counter, island, decor, artwork, mirror, tv, curtains, shelf, sconce.',
+    'Wall-mounted types (artwork, mirror, tv, curtains, shelf, sconce) use wall, offset and y (height of their bottom edge) instead of x and z. Curtains hang beside or over a window: give them the window\'s wall and offset.',
+    'RULES: true real-world sizes (a 3-seat sofa is about 2.2 x 0.95 x 0.85 m, a coffee table about 0.45 m high, an interior door about 0.9 x 2.1 m, a ceiling about 2.7 to 3.2 m). color is the main color actually seen in the images and secondary_color the second one (legs, frame, pillows or pot). Include every window and door on every wall, all main furniture, rugs, lamps, plants and wall art, up to 30 objects. Keep everything inside the room without overlaps. A table_lamp or decor standing on furniture gets y equal to that furniture\'s top. pendant_light and chandelier y is the height of the shade above the floor. For a sofa or bed, width is the long side.'
+  ].join('\n');
+}
+
+// Ask the text model for the layout; returns parsed JSON
+async function readLayout(images, prompt) {
+  var parts = images.map(function (img) { return { inline_data: { mime_type: 'image/jpeg', data: img.split(',')[1] } }; });
+  parts.push({ text: prompt });
+  var payload = { contents: [{ parts: parts }], generationConfig: { responseMimeType: 'application/json', temperature: 0.2 } };
+  var ctrl = new AbortController();
+  var timer = setTimeout(function () { ctrl.abort(); }, 120000);
+  var res;
+  try {
+    res = getKey()
+      ? await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + LAYOUT_MODEL + ':generateContent', {
+          signal: ctrl.signal, method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': getKey() },
+          body: JSON.stringify(payload)
+        })
+      : await fetch(PROXY + '/generate?lib=' + LIBRARY, {
+          signal: ctrl.signal, method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ model: LAYOUT_MODEL, payload: payload })
+        });
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('Reading the room took too long. Press Try again.');
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+  var json = await res.json().catch(function () { return {}; });
+  if (!res.ok) throw new Error((json.error && json.error.message) || 'Could not read the room layout (' + res.status + ').');
+  var parts2 = (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts) || [];
+  var text = parts2.map(function (p) { return p.thought ? '' : (p.text || ''); }).join('');
+  var m = text.match(/\{[\s\S]*\}/);
+  try { return JSON.parse(m ? m[0] : text); } catch (e) { throw new Error('Gemini returned an unreadable room layout. Press Try again.'); }
+}
+
+function setStep3d(id, status) {
+  var li = $(id);
+  li.classList.toggle('active', status === 'active');
+  li.classList.toggle('done', status === 'done');
+  li.querySelector('i').className = status === 'active' ? 'fa-solid fa-spinner fa-spin' : status === 'done' ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle';
+}
+function viewsMissing() {
+  if (room3d.forResult !== state.result) return VIEWS3D.length;
+  return VIEWS3D.filter(function (v) { return !room3d.views[v.id]; }).length;
+}
+function renderThumbs3d() {
+  var box = $('thumbs3d');
+  box.innerHTML = '';
+  VIEWS3D.forEach(function (v) {
+    var f = document.createElement('figure');
+    var ph = document.createElement('div');
+    var img = room3d.views[v.id];
+    ph.className = 'ph' + (img ? '' : ' wait');
+    if (img) ph.style.backgroundImage = 'url(' + img + ')';
+    var cap = document.createElement('figcaption');
+    cap.textContent = v.name;
+    f.append(ph, cap);
+    box.appendChild(f);
+  });
+  var done = VIEWS3D.filter(function (v) { return room3d.views[v.id]; }).length;
+  $('views3dCount').textContent = '(' + done + ' of ' + VIEWS3D.length + ')';
+}
+function renderRefs3d() {
+  var box = $('refs3d');
+  box.innerHTML = '';
+  [state.result].concat(VIEWS3D.map(function (v) { return room3d.views[v.id]; })).filter(Boolean).forEach(function (src, i) {
+    var img = document.createElement('img');
+    img.src = src;
+    img.alt = i ? VIEWS3D.filter(function (v) { return room3d.views[v.id]; })[i - 1].name : 'Front view';
+    box.appendChild(img);
+  });
+}
+function show3dError(msg) {
+  $('error3d').textContent = msg;
+  $('error3d').hidden = !msg;
+  $('retry3dRow').hidden = !msg;
+}
+
+async function makeRoom3d() {
+  if (busy3d || !state.result) return;
+  if (room3d.forResult !== state.result) room3d = { forResult: state.result, views: {}, spec: null };
+  var missing = viewsMissing();
+  if (missing && !getKey() && me && me.tokens < missing * TOKENS_PER_IMAGE) { openTokens(); return; }
+  state.view = '3d';
+  refresh();
+  // Already built for this design: just show it
+  if (viewer3d && viewerFor === state.result) { $('progress3d').hidden = true; return; }
+  busy3d = true;
+  show3dError('');
+  $('progress3d').hidden = false;
+  ['step3dViews', 'step3dLayout', 'step3dBuild'].forEach(function (s) { setStep3d(s, 'pending'); });
+  $('note3d').textContent = missing ? 'Drawing ' + missing + ' new views uses ' + missing * TOKENS_PER_IMAGE + ' tokens (10 per view). This takes about a minute.' : '';
+  renderThumbs3d();
+  var forResult = state.result;
+  try {
+    // 1) Views, drawn in parallel; each one also lands in "See it from another angle" and My designs
+    setStep3d('step3dViews', 'active');
+    var ref = await resizeImage(state.result, 1280, 0.88);
+    var outOfTokens = false;
+    var firstError = null;
+    await Promise.all(VIEWS3D.filter(function (v) { return !room3d.views[v.id]; }).map(async function (v) {
+      try {
+        var out = await callGemini(ref, buildAnglePrompt(v), '1K');
+        if (room3d.forResult !== forResult) return;
+        room3d.views[v.id] = out.img;
+        var view = { img: out.img, name: v.name };
+        state.angles = [view].concat(state.angles || []);
+        renderAngles();
+        recordDesign(view, view.img, ' · ' + v.name);
+        renderThumbs3d();
+      } catch (e) {
+        if (e.needTokens) outOfTokens = true;
+        firstError = firstError || e;
+      }
+    }));
+    if (room3d.forResult !== forResult) return;
+    var got = VIEWS3D.filter(function (v) { return room3d.views[v.id]; });
+    if (outOfTokens) { openTokens(); throw new Error('You ran out of tokens while drawing the views. The views that finished are kept.'); }
+    if (got.length < 2) throw firstError || new Error('Gemini could not draw the other views this time.');
+    setStep3d('step3dViews', 'done');
+
+    // 2) Layout from the design plus every view
+    setStep3d('step3dLayout', 'active');
+    $('note3d').textContent = 'Gemini is measuring the room and placing the furniture from all ' + (got.length + 1) + ' views.';
+    if (!room3d.spec) {
+      var images = [await resizeImage(state.result, 1024, 0.85)];
+      for (var i = 0; i < got.length; i++) images.push(await resizeImage(room3d.views[got[i].id], 768, 0.82));
+      room3d.spec = await readLayout(images, buildLayoutPrompt(got.map(function (v) { return v.name; })));
+    }
+    setStep3d('step3dLayout', 'done');
+
+    // 3) Three.js scene
+    setStep3d('step3dBuild', 'active');
+    $('note3d').textContent = 'Building walls, windows, furniture and lighting.';
+    var mod = await import('./room3d.js');
+    if (viewer3d) { viewer3d.dispose(); viewer3d = null; }
+    viewer3d = await mod.buildRoom($('canvas3d'), room3d.spec, { mobile: !DESKTOP.matches });
+    viewerFor = forResult;
+    setStep3d('step3dBuild', 'done');
+    renderRefs3d();
+    $('progress3d').hidden = true;
+  } catch (e) {
+    if (e.needTokens) openTokens();
+    show3dError(friendlyError(e));
+  } finally {
+    busy3d = false;
+    refresh();
+  }
+}
+$('make3dBtn').addEventListener('click', makeRoom3d);
+$('retry3d').addEventListener('click', makeRoom3d);
+function back2d() { state.view = 'side'; refresh(); }
+$('back2d').addEventListener('click', back2d);
+$('cancel3d').addEventListener('click', back2d);
+$('reset3d').addEventListener('click', function () { if (viewer3d) viewer3d.resetView(); });
+
 // Compare slider: before on the left, after on the right
 function setSlider(v) {
   $('beforeLayer').style.clipPath = 'inset(0 ' + (100 - v) + '% 0 0)';
@@ -1903,9 +2152,18 @@ function refresh() {
     : (state.quality === 'hd' ? 'HD takes about 1 to 2 minutes' : 'Takes about 20 to 40 seconds') + freeNote;
 
   $('noResult').hidden = has;
+  // A new or refined design needs a new 3D room; fall back to 2D until it is made
+  if (state.view === '3d' && !busy3d && room3d.forResult !== state.result) state.view = 'side';
   pressAll('#viewToggle button', function (b) { return b.dataset.v === state.view; });
   $('pair').hidden = !has || state.view !== 'side';
   $('compare').hidden = !has || state.view !== 'slider';
+  $('stage3d').hidden = !has || state.view !== '3d';
+  $('resultActions').hidden = state.view === '3d';
+  $('make3dBtn').setAttribute('aria-pressed', String(state.view === '3d'));
+  var built = viewer3d && viewerFor === state.result;
+  var missing3d = has ? viewsMissing() : 0;
+  $('make3dLabel').textContent = built ? '3D view' : 'Make 3D';
+  $('make3dCost').textContent = built || !missing3d || hasKey ? '' : missing3d * TOKENS_PER_IMAGE + ' tokens';
   $('refineBox').hidden = !has;
   $('anglesBox').hidden = !has;
   renderVersions();

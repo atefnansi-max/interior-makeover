@@ -3,7 +3,9 @@
 // - /me, /auth/google, /auth/logout: guest accounts (50 free tokens) and Google sign-in with sessions.
 // - /designs: generated and saved designs (D1 for details, KV for full images), owned by a guest or a Google account.
 
-const ALLOWED_MODELS = ['gemini-3.1-flash-image', 'gemini-2.5-flash-image'];
+// The text model only reads a room's layout for the 3D view; it returns no image, so it costs no tokens
+const TEXT_MODEL = 'gemini-2.5-flash';
+const ALLOWED_MODELS = ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', TEXT_MODEL];
 const MAX_BODY_BYTES = 12 * 1024 * 1024;
 const TOKENS_PER_IMAGE = 10;
 const GUEST_TOKENS = 50;
@@ -243,7 +245,7 @@ async function generateApi(request, env, url, headers) {
 
   const owner = await getOwner(request, env, url);
   if (!owner) return json({ error: { message: 'Missing library code.' } }, 400, headers);
-  if (owner.tokens < TOKENS_PER_IMAGE) {
+  if (model !== TEXT_MODEL && owner.tokens < TOKENS_PER_IMAGE) {
     return json({ error: { message: 'You have used all your tokens. Each design costs ' + TOKENS_PER_IMAGE + ' tokens.' }, needTokens: true, tokens: owner.tokens }, 402, headers);
   }
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
