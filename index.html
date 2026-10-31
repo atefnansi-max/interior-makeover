@@ -247,6 +247,8 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .icon-btn:hover { background: var(--ground); color: var(--ink); }
 
 /* Tokens, sign-in and dashboard */
+nav a, nav button { white-space: nowrap; }
+@media (max-width: 1000px) { nav { gap: 16px; } nav a.nl { display: none; } }
 .token-pill { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 700; cursor: pointer; }
 .token-pill i { color: #C08A2E; }
 .token-pill.low { border-color: var(--accent); color: var(--accent); }
