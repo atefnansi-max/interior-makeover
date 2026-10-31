@@ -214,6 +214,15 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .gcard { transition: box-shadow .4s, border-color .4s; }
 .lib-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 .lib-row .btn { min-height: 40px; padding: 0 16px; font-size: 14px; }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.tiles-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 64px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); color: var(--ink); font-size: 12.5px; font-weight: 600; line-height: 1.2; text-align: center; transition: border-color .15s, background .15s; }
+.tile i { font-size: 20px; color: var(--muted); }
+.tile:hover { border-color: #CFC6BA; }
+.tile[aria-pressed="true"] { border: 2px solid var(--accent); background: #FDF3EE; color: var(--ink); }
+.tile[aria-pressed="true"] i { color: var(--accent); }
+.seg button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.seg button i { font-size: 13px; }
 .stage-wrap { position: relative; }
 .rail { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 10px; z-index: 3; }
 .rail-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 64px; padding: 0; border: 0; background: none; color: #fff; text-decoration: none; font-size: 11.5px; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.5); cursor: pointer; }
@@ -376,8 +385,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
   <div class="wrap">
     <div class="head studio-head">
       <h2 class="serif">Design <em>studio</em></h2>
-      <button type="button" class="btn btn-soft settings-btn" id="openSettings" aria-haspopup="dialog"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
-        
+      <button type="button" class="btn btn-soft settings-btn" id="openSettings" aria-haspopup="dialog"><i class="fa-solid fa-gear" aria-hidden="true"></i>
         Settings</button>
     </div>
 
@@ -416,8 +424,8 @@ footer .logo { font-size: 24px; color: var(--ink); }
         <div id="resultView" class="ws-stage" hidden>
           <div class="ws-bar">
             <div class="seg seg-2 view-toggle" id="viewToggle" role="group" aria-label="How to compare">
-              <button type="button" data-v="side" aria-pressed="true">Side by side</button>
-              <button type="button" data-v="slider" aria-pressed="false">Slider</button>
+              <button type="button" data-v="side" aria-pressed="true"><i class="fa-solid fa-table-columns" aria-hidden="true"></i> <span>Side by side</span></button>
+              <button type="button" data-v="slider" aria-pressed="false"><i class="fa-solid fa-arrows-left-right" aria-hidden="true"></i> <span>Slider</span></button>
             </div>
             <div class="cost-pill" id="costBadge"></div>
           </div>
@@ -459,7 +467,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
         <div class="settings-body">
           <fieldset class="field">
             <legend class="label">Room type</legend>
-            <div class="chips" id="rooms"></div>
+            <div class="tiles" id="rooms"></div>
           </fieldset>
           <fieldset class="field" id="styleField">
             <legend class="label">Style</legend>
@@ -468,14 +476,14 @@ footer .logo { font-size: 24px; color: var(--ink); }
           <fieldset class="field">
             <legend class="label">Makeover level</legend>
             <div class="seg" id="intensity">
-              <button type="button" data-v="light" aria-pressed="false">Light refresh</button>
-              <button type="button" data-v="full" aria-pressed="true">Full makeover</button>
-              <button type="button" data-v="bold" aria-pressed="false">Bold &amp; creative</button>
+              <button type="button" data-v="light" aria-pressed="false"><i class="fa-solid fa-brush" aria-hidden="true"></i> <span>Light refresh</span></button>
+              <button type="button" data-v="full" aria-pressed="true"><i class="fa-solid fa-paint-roller" aria-hidden="true"></i> <span>Full makeover</span></button>
+              <button type="button" data-v="bold" aria-pressed="false"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> <span>Bold &amp; creative</span></button>
             </div>
           </fieldset>
           <fieldset class="field">
             <legend class="label">Keep existing items <small>optional</small></legend>
-            <div class="chips" id="keepChips"></div>
+            <div class="tiles tiles-4" id="keepChips"></div>
           </fieldset>
           <details class="more" id="moreOptions">
             <summary>More options</summary>
@@ -483,24 +491,24 @@ footer .logo { font-size: 24px; color: var(--ink); }
               <fieldset class="field">
                 <legend class="label">Lighting</legend>
                 <div class="seg" id="mood">
-                  <button type="button" data-v="day" aria-pressed="true">Daylight</button>
-                  <button type="button" data-v="golden" aria-pressed="false">Golden hour</button>
-                  <button type="button" data-v="evening" aria-pressed="false">Evening</button>
+                  <button type="button" data-v="day" aria-pressed="true"><i class="fa-solid fa-sun" aria-hidden="true"></i> <span>Daylight</span></button>
+                  <button type="button" data-v="golden" aria-pressed="false"><i class="fa-solid fa-cloud-sun" aria-hidden="true"></i> <span>Golden hour</span></button>
+                  <button type="button" data-v="evening" aria-pressed="false"><i class="fa-solid fa-moon" aria-hidden="true"></i> <span>Evening</span></button>
                 </div>
               </fieldset>
               <fieldset class="field">
                 <legend class="label">Budget</legend>
                 <div class="seg" id="budget">
-                  <button type="button" data-v="budget" aria-pressed="false">Affordable</button>
-                  <button type="button" data-v="mid" aria-pressed="true">Mid-range</button>
-                  <button type="button" data-v="luxury" aria-pressed="false">Luxury</button>
+                  <button type="button" data-v="budget" aria-pressed="false"><i class="fa-solid fa-piggy-bank" aria-hidden="true"></i> <span>Affordable</span></button>
+                  <button type="button" data-v="mid" aria-pressed="true"><i class="fa-solid fa-wallet" aria-hidden="true"></i> <span>Mid-range</span></button>
+                  <button type="button" data-v="luxury" aria-pressed="false"><i class="fa-solid fa-gem" aria-hidden="true"></i> <span>Luxury</span></button>
                 </div>
               </fieldset>
               <fieldset class="field">
                 <legend class="label">Output quality</legend>
                 <div class="seg seg-2" id="quality">
-                  <button type="button" data-v="fast" aria-pressed="true">Fast · 20–40 s</button>
-                  <button type="button" data-v="hd" aria-pressed="false">HD 2K · 1–2 min</button>
+                  <button type="button" data-v="fast" aria-pressed="true"><i class="fa-solid fa-bolt" aria-hidden="true"></i> <span>Fast · 20–40 s</span></button>
+                  <button type="button" data-v="hd" aria-pressed="false"><i class="fa-solid fa-image" aria-hidden="true"></i> <span>HD 2K · 1–2 min</span></button>
                 </div>
               </fieldset>
               <div class="field">
@@ -513,8 +521,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
         <div class="settings-foot">
           <p class="error" id="error" role="alert" hidden></p>
           <button type="button" class="btn btn-accent cta" id="generate">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
-            Generate my design</button>
+            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Generate my design</button>
           <div class="loading" id="loading" role="status" hidden>
             <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
             <span>Designing... <span class="timer"></span></span>
@@ -711,9 +718,21 @@ function makeChip(label, pressed, onClick, cls) {
   return b;
 }
 
-// Room type, style, keep chips
+// Icon tiles for room types and pieces to keep (Font Awesome)
+var ROOM_ICONS = { living: 'couch', bedroom: 'bed', majlis: 'mug-hot', dining: 'utensils', kitchen: 'kitchen-set', office: 'laptop' };
+var KEEP_ICONS = { 'Sofa': 'couch', 'Rug': 'rug', 'Bed': 'bed', 'Dining table': 'chair', 'Curtains': 'person-booth', 'Plants': 'seedling', 'Artwork': 'image', 'Lighting': 'lightbulb' };
+function makeTile(icon, label, pressed, onClick) {
+  var b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'tile';
+  b.setAttribute('aria-pressed', String(pressed));
+  b.innerHTML = '<i class="fa-solid fa-' + icon + '" aria-hidden="true"></i><span></span>';
+  b.querySelector('span').textContent = label;
+  b.addEventListener('click', onClick);
+  return b;
+}
 ROOMS.forEach(function (r) {
-  var b = makeChip(r.name, r.id === state.room, function () { state.room = r.id; refresh(); });
+  var b = makeTile(ROOM_ICONS[r.id], r.name, r.id === state.room, function () { state.room = r.id; refresh(); });
   b.dataset.id = r.id;
   $('rooms').appendChild(b);
 });
@@ -728,7 +747,7 @@ STYLES.forEach(function (s) {
   $('styles').appendChild(b);
 });
 KEEP_ITEMS.forEach(function (k) {
-  var b = makeChip(k, false, function () {
+  var b = makeTile(KEEP_ICONS[k], k, false, function () {
     var i = state.keep.indexOf(k);
     if (i < 0) state.keep.push(k); else state.keep.splice(i, 1);
     refresh();
@@ -1544,9 +1563,9 @@ function pressAll(sel, isOn) {
 }
 
 function refresh() {
-  pressAll('#rooms .chip', function (b) { return b.dataset.id === state.room; });
+  pressAll('#rooms .tile', function (b) { return b.dataset.id === state.room; });
   pressAll('#styles .style', function (b) { return b.dataset.id === state.style; });
-  pressAll('#keepChips .chip', function (b) { return state.keep.indexOf(b.dataset.id) >= 0; });
+  pressAll('#keepChips .tile', function (b) { return state.keep.indexOf(b.dataset.id) >= 0; });
   pressAll('#intensity button', function (b) { return b.dataset.v === state.intensity; });
   pressAll('#budget button', function (b) { return b.dataset.v === state.budget; });
   pressAll('#mood button', function (b) { return b.dataset.v === state.mood; });
