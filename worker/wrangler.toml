@@ -20,7 +20,7 @@ id = "dad895ecfb7a45dbb36f2d03fdc5e79c"
 [vars]
 ALLOWED_ORIGINS = "https://atefnansi-max.github.io"
 # Abuse guard on top of tokens: designs per day for the whole site and for each connection
-DAILY_LIMIT_SITE = "150"
-DAILY_LIMIT_PER_VISITOR = "30"
+DAILY_LIMIT_SITE = "600"
+DAILY_LIMIT_PER_VISITOR = "120"
 # Public Google OAuth Client ID for "Continue with Google" (empty until it is created)
 GOOGLE_CLIENT_ID = "740856707723-megtf2l9iqcv34nn6e6arsu7ai5san3m.apps.googleusercontent.com"

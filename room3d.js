@@ -122,21 +122,25 @@ function floorTexture(kind, hex, rand) {
   return canvasTexture(512, (g, s) => {
     g.fillStyle = css(base);
     g.fillRect(0, 0, s, s);
+    // Plank-to-plank variation scales with the floor's lightness, so dark floors don't look checkered
+    const hsl = {};
+    base.getHSL(hsl);
+    const vary = 0.025 + 0.05 * hsl.l;
     if (kind === 'wood') {
       const rows = 8, h = s / rows;
       for (let r = 0; r < rows; r++) {
         let x = -rand() * s;
         while (x < s) {
           const len = s * (0.45 + rand() * 0.5);
-          g.fillStyle = css(base.clone().offsetHSL(0, (rand() - 0.5) * 0.04, (rand() - 0.5) * 0.07));
+          g.fillStyle = css(base.clone().offsetHSL(0, (rand() - 0.5) * 0.03, (rand() - 0.5) * vary));
           g.fillRect(x, r * h, len, h);
           g.strokeStyle = 'rgba(0,0,0,0.05)';
           for (let i = 0; i < 5; i++) { g.beginPath(); const yy = r * h + rand() * h; g.moveTo(x, yy); g.lineTo(x + len, yy + (rand() - 0.5) * 4); g.stroke(); }
-          g.fillStyle = 'rgba(0,0,0,0.18)';
+          g.fillStyle = 'rgba(0,0,0,0.12)';
           g.fillRect(x, r * h, 2, h);
           x += len;
         }
-        g.fillStyle = 'rgba(0,0,0,0.16)';
+        g.fillStyle = 'rgba(0,0,0,0.12)';
         g.fillRect(0, r * h, s, 2);
       }
     } else if (kind === 'tile') {
@@ -557,7 +561,7 @@ export async function buildRoom(container, rawSpec, opts = {}) {
   controls.minDistance = 0.6;
   controls.maxDistance = Math.max(W, D) * 3;
   const home = () => {
-    camera.position.set(W * 0.12, H * 1.35, D / 2 + Math.max(W, D) * 0.95);
+    camera.position.set(W * 0.1, H * 1.3, D / 2 + Math.max(W, D) * 0.6);
     controls.target.set(0, H * 0.32, -D * 0.05);
     controls.update();
   };
