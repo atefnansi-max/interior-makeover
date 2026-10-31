@@ -3,24 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Makeover · AI Interior Studio</title>
+<title>Makeoverly · AI Interior Studio</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/logo-mark.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/v4-shims.min.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap">
 <style>
 :root {
-  --ground: #FBF8F3;
+  --ground: #FCF7F0;
   --paper: #FFFFFF;
   --ink: #24211D;
   --muted: #5F5A52;
   --line: #E7E0D5;
   --sage: #DCE5D3;
   --blush: #F6DCD2;
-  --butter: #F7E9C2;
+  --butter: #FBE7BE;
   --sky: #D9E6EE;
-  --accent: #B5532C;
-  --accent-dark: #97431F;
+  --accent: #7A0F24;
+  --accent-dark: #5C0517;
   --serif: 'Instrument Serif', Georgia, serif;
   --img: url();
 }
@@ -50,6 +52,9 @@ header { position: sticky; top: 0; z-index: 10; background: rgba(251,248,243,.92
 header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; }
 .logo { font-family: var(--serif); font-size: 30px; text-decoration: none; }
 .logo em { color: var(--accent); }
+.logo { display: inline-flex; align-items: center; gap: 10px; }
+.logo img { width: 40px; height: 40px; border-radius: 12px; }
+footer .logo img { width: 32px; height: 32px; border-radius: 10px; }
 nav { display: flex; align-items: center; gap: 28px; }
 nav a.nl { display: none; font-size: 15px; font-weight: 500; text-decoration: none; padding: 12px 0; }
 nav .btn { min-height: 44px; padding: 0 20px; font-size: 15px; }
@@ -94,7 +99,7 @@ nav .btn { min-height: 44px; padding: 0 20px; font-size: 15px; }
 .photo-col { flex: 1 1 440px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
 .controls { flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 28px; }
 .drop { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; height: 440px; border: 1.5px dashed #CFC6BA; border-radius: 28px; background: var(--ground); text-align: center; padding: 24px; cursor: pointer; transition: border-color .15s, background .15s; }
-.drop:hover, .drop.over { border-color: var(--accent); background: #FDF3EE; }
+.drop:hover, .drop.over { border-color: var(--accent); background: #F8E9EA; }
 .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .drop-icon { width: 72px; height: 72px; border-radius: 999px; background: var(--blush); color: var(--accent); display: flex; align-items: center; justify-content: center; }
 .drop strong { font-size: 18px; }
@@ -219,7 +224,7 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 64px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); color: var(--ink); font-size: 12.5px; font-weight: 600; line-height: 1.2; text-align: center; transition: border-color .15s, background .15s; }
 .tile i { font-size: 20px; color: var(--muted); }
 .tile:hover { border-color: #CFC6BA; }
-.tile[aria-pressed="true"] { border: 2px solid var(--accent); background: #FDF3EE; color: var(--ink); }
+.tile[aria-pressed="true"] { border: 2px solid var(--accent); background: #F8E9EA; color: var(--ink); }
 .tile[aria-pressed="true"] i { color: var(--accent); }
 .seg button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
 .seg button i { font-size: 13px; }
@@ -229,7 +234,7 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .rail-btn i { width: 46px; height: 46px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--ink); background: rgba(255,255,255,.94); box-shadow: 0 4px 14px rgba(36,33,29,.22); text-shadow: none; transition: transform .15s; }
 .rail-btn:hover i { transform: scale(1.08); }
 .rail-btn:hover { color: #fff; }
-.cta { box-shadow: 0 10px 24px rgba(181,83,44,.28); }
+.cta { box-shadow: 0 10px 24px rgba(122,15,36,.28); }
 .cta.not-ready { opacity: .8; box-shadow: none; }
 .settings-btn i { font-size: 16px; }
 .gnote { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
@@ -238,7 +243,7 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .gedit input, .gedit textarea { min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; font: inherit; color: var(--ink); background: var(--paper); }
 .gedit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 .gedit-actions .btn { min-height: 44px; padding: 0 18px; font-size: 14px; }
-.gcard.fresh { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(181,83,44,.18); }
+.gcard.fresh { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(122,15,36,.18); }
 .gcard .thumb { height: 220px; background-size: cover; background-position: center; }
 .gcard .meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 8px 10px 16px; }
 .gcard strong { display: block; font-size: 16px; }
@@ -250,7 +255,7 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 nav a, nav button { white-space: nowrap; }
 @media (max-width: 1000px) { nav { gap: 16px; } nav a.nl { display: none; } }
 .token-pill { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 700; cursor: pointer; }
-.token-pill i { color: #C08A2E; }
+.token-pill i { color: #D9A13E; }
 .token-pill.low { border-color: var(--accent); color: var(--accent); }
 .auth-btn { min-height: 40px !important; padding: 0 16px !important; font-size: 14px !important; gap: 8px; }
 .auth-btn img { width: 26px; height: 26px; border-radius: 999px; object-fit: cover; margin-left: -8px; }
@@ -261,12 +266,12 @@ nav a, nav button { white-space: nowrap; }
 .dash-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 .dash-row .btn { min-height: 40px; padding: 0 16px; font-size: 14px; }
 .dash-tokens { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; }
-.dash-tokens i { color: #C08A2E; }
+.dash-tokens i { color: #D9A13E; }
 .gallery-filter { width: 240px; max-width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .choice-list { display: flex; flex-direction: column; gap: 10px; }
 .choice { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); color: var(--ink); text-align: left; font: inherit; cursor: pointer; }
 .choice:hover { border-color: var(--accent); }
-.choice i { width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: #FDF3EE; color: var(--accent); font-size: 17px; }
+.choice i { width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: #F8E9EA; color: var(--accent); font-size: 17px; }
 .choice strong { display: block; font-size: 16px; }
 .choice small { color: var(--muted); font-size: 13px; }
 .dialog-lead { margin: 0; color: var(--muted); }
@@ -367,7 +372,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
 
 <header>
   <div class="wrap">
-    <a class="logo" href="#">Make<em>over</em></a>
+    <a class="logo" href="#"><img src="assets/logo-mark.png" alt="" width="40" height="40"><span>Make<em>overly</em></span></a>
     <nav>
       <a class="nl" href="#how">How it works</a>
       <a class="nl" href="#gallery">My designs</a>
@@ -616,7 +621,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
 <dialog class="settings-dialog" id="signinDialog" aria-labelledby="signinTitle">
   <form method="dialog" class="settings-form">
     <div class="dialog-head">
-      <h3 class="serif" id="signinTitle">Sign in to <em>Makeover</em></h3>
+      <h3 class="serif" id="signinTitle">Sign in to <em>Makeoverly</em></h3>
       <button type="submit" class="icon-btn" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </div>
     <p class="dialog-lead">Get 50 more tokens (5 free designs) and keep your designs on every device. The designs you made as a guest move to your account.</p>
@@ -698,7 +703,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
 
 <footer>
   <div class="wrap">
-    <span class="logo">Make<em style="color:var(--accent)">over</em></span>
+    <span class="logo"><img src="assets/logo-mark.png" alt="" width="32" height="32"><span>Make<em style="color:var(--accent)">overly</em></span></span>
     <span>Built by Group 36, Outskill AI Accelerator</span>
   </div>
 </footer>
@@ -891,7 +896,7 @@ function friendlyError(e) {
   if (!getKey() && location.hostname !== 'atefnansi-max.github.io') {
     return 'Free designs only work on the live site. Open ' + LIVE_SITE + ' (this copy is a local file).';
   }
-  return getKey() ? 'Could not reach Gemini. Check your internet connection.' : 'Could not reach the Makeover server. Check your internet connection and try again.';
+  return getKey() ? 'Could not reach Gemini. Check your internet connection.' : 'Could not reach the Makeoverly server. Check your internet connection and try again.';
 }
 // Tokens and sign-in: every visitor starts as a guest with 50 tokens; each design costs 10
 var SESSION_STORE = 'makeover-session';
