@@ -496,6 +496,27 @@ footer .logo { font-size: 24px; color: var(--ink); }
 .settings-dialog { border: none; padding: 0; width: min(560px, calc(100% - 32px)); border-radius: 24px; background: var(--paper); color: var(--ink); box-shadow: 0 30px 80px rgba(36,33,29,.25); }
 .settings-dialog::backdrop { background: rgba(36,33,29,.45); }
 .settings-form { display: flex; flex-direction: column; gap: 18px; padding: 24px; }
+/* Style quiz: a swipe deck of five rooms */
+.quiz-link { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px dashed var(--accent); border-radius: 999px; background: transparent; color: var(--accent); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.quiz-dots { display: flex; justify-content: center; gap: 6px; margin: 4px 0 10px; }
+.quiz-dots i { width: 28px; height: 5px; border-radius: 3px; background: var(--line); }
+.quiz-dots i.done { background: var(--accent); }
+.quiz-deck { position: relative; height: min(54vh, 470px); aspect-ratio: 3 / 4; max-width: 100%; margin: 0 auto; }
+.quiz-card { position: absolute; inset: 0; border-radius: 22px; overflow: hidden; background: #ddd center / cover no-repeat; box-shadow: 0 14px 34px rgba(36,33,29,.2); touch-action: none; user-select: none; cursor: grab; transition: transform .35s ease, opacity .35s ease; }
+.quiz-card.back { transform: scale(.94) translateY(14px); opacity: .7; pointer-events: none; }
+.quiz-card.drag { transition: none; cursor: grabbing; }
+.quiz-stamp { position: absolute; top: 22px; padding: 4px 14px; border: 4px solid; border-radius: 10px; font-size: 26px; font-weight: 800; letter-spacing: .06em; opacity: 0; background: rgba(255,255,255,.85); }
+.quiz-stamp.love { left: 18px; color: #2F7D4F; transform: rotate(-12deg); }
+.quiz-stamp.nope { right: 18px; color: #A3323F; transform: rotate(12deg); }
+.quiz-actions { display: flex; justify-content: center; gap: 28px; margin-top: 16px; }
+.quiz-btn { width: 64px; height: 64px; border-radius: 50%; border: 0; font-size: 24px; cursor: pointer; background: var(--paper); box-shadow: 0 8px 22px rgba(36,33,29,.16); }
+.quiz-btn.nope { color: #A3323F; }
+.quiz-btn.love { color: #fff; background: var(--accent); }
+.quiz-btn:focus-visible, .quiz-link:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.quiz-result-img { width: 100%; height: 220px; object-fit: cover; border-radius: 20px; }
+.quiz-kicker { margin: 16px 0 0; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.quiz-style { font-size: 44px; margin: 2px 0 6px; }
+.quiz-why { margin: 0 0 16px; color: var(--muted); }
 .reel-stage { display: flex; justify-content: center; margin: 4px 0 12px; }
 .reel-stage canvas, .reel-stage video { width: auto; height: min(52vh, 460px); aspect-ratio: 9 / 16; border-radius: 18px; background: #1d1a17; box-shadow: 0 12px 30px rgba(36,33,29,.18); }
 .reel-progress { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; }
@@ -712,6 +733,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
           </fieldset>
           <fieldset class="field" id="styleField">
             <legend class="label" id="styleLegend">Style</legend>
+            <button type="button" class="quiz-link" id="openQuiz"><i class="fa-solid fa-heart" aria-hidden="true"></i> Not sure? Find your style in 5 swipes</button>
             <div class="styles" id="styles"></div>
           </fieldset>
           <fieldset class="field">
@@ -793,6 +815,34 @@ footer .logo { font-size: 24px; color: var(--ink); }
       <p class="keynote">Not needed: leave it empty to use the free designs (a daily limit applies). If you add your own key, it's saved only in this browser and you pay Google directly, usually a few cents per image. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a key</a></p>
     </div>
     <button type="submit" class="btn btn-accent">Done</button>
+  </form>
+</dialog>
+
+<dialog class="settings-dialog quiz-dialog" id="quizDialog" aria-labelledby="quizTitle">
+  <form method="dialog" class="settings-form">
+    <div class="dialog-head">
+      <h3 class="serif" id="quizTitle">Find your <em>style</em></h3>
+      <button type="submit" class="icon-btn" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <div id="quizPlay">
+      <p class="dialog-lead">Five rooms. Swipe right if you love it, left if it's not you.</p>
+      <div class="quiz-dots" id="quizDots" aria-hidden="true"></div>
+      <div class="quiz-deck" id="quizDeck" aria-live="polite"></div>
+      <div class="quiz-actions">
+        <button type="button" class="quiz-btn nope" id="quizNope" aria-label="Not for me"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+        <button type="button" class="quiz-btn love" id="quizLove" aria-label="Love it"><i class="fa-solid fa-heart" aria-hidden="true"></i></button>
+      </div>
+    </div>
+    <div id="quizResult" hidden>
+      <img class="quiz-result-img" id="quizResultImg" alt="">
+      <p class="quiz-kicker">Your style is</p>
+      <h4 class="serif quiz-style" id="quizResultName"></h4>
+      <p class="quiz-why" id="quizResultWhy"></p>
+      <div class="actions reel-actions">
+        <button type="button" class="btn btn-accent" id="quizUse"></button>
+        <button type="button" class="btn btn-soft" id="quizAgain">Retake</button>
+      </div>
+    </div>
   </form>
 </dialog>
 
@@ -2626,6 +2676,142 @@ $('reelShare').addEventListener('click', function () {
 $('reelDialog').addEventListener('close', function () {
   if (reel.busy) reel.cancel = true;
   $('reelVideo').pause();
+});
+
+// ---------- 6. Style quiz ----------
+// Five rooms, swiped. Each photo scores one main style (3) and sometimes a neighbour (1).
+// The first three cards spread across styles; the last two test the leading styles.
+var QUIZ_CARDS = [
+  { img: '1583847268964-b28dc8f51f92', w: { scandi: 3, japandi: 1, boho: 1 } },
+  { img: '1610307540583-7472788642d6', w: { scandi: 3, japandi: 1 } },
+  { img: '1753800558729-7929703f81de', w: { japandi: 3, modern: 1 } },
+  { img: '1790689671562-2f462f0581a8', w: { industrial: 3, boho: 1 } },
+  { img: '1767050321604-a2654be8fad0', w: { classic: 3, arabic: 1 } },
+  { img: '1785119774310-84850a185fb4', w: { classic: 3, boho: 1 } },
+  { img: '1600493504591-aa1849716b36', w: { boho: 3, scandi: 1 } },
+  { img: '1724582586458-a51791349977', w: { modern: 3, japandi: 1 } },
+  { img: '1599696848652-f0ff23bc911f', w: { modern: 2, industrial: 2 } },
+  { img: '1505577058444-a3dab90d4253', w: { arabic: 3, boho: 1 } },
+  { img: '1631679706909-1844bbd07221', w: { arabic: 3, modern: 1 } }
+];
+var QUIZ_ROUNDS = 5;
+var quiz = { shown: [], score: {}, seen: {}, card: null };
+function mainStyle(c) { return Object.keys(c.w).reduce(function (a, b) { return c.w[a] >= c.w[b] ? a : b; }); }
+function quizNext() {
+  var left = QUIZ_CARDS.filter(function (c) { return quiz.shown.indexOf(c) < 0; });
+  var pick;
+  if (quiz.shown.length < 3) {
+    // Spread: the card whose main style has been seen least so far, random among ties
+    var least = Math.min.apply(null, left.map(function (c) { return quiz.seen[mainStyle(c)] || 0; }));
+    var spread = left.filter(function (c) { return (quiz.seen[mainStyle(c)] || 0) === least; });
+    pick = spread[Math.floor(Math.random() * spread.length)];
+  } else {
+    // Confirm: a card for the best-scoring style that still has one, else the next best
+    var ranked = STYLES.map(function (s) { return s.id; }).sort(function (a, b) { return (quiz.score[b] || 0) - (quiz.score[a] || 0); });
+    for (var i = 0; i < ranked.length && !pick; i++) pick = left.find(function (c) { return mainStyle(c) === ranked[i]; });
+  }
+  return pick || left[0];
+}
+function quizCardEl(c, back) {
+  var el = document.createElement('div');
+  el.className = 'quiz-card' + (back ? ' back' : '');
+  el.style.backgroundImage = 'url("https://images.unsplash.com/photo-' + c.img + '?w=700&h=930&fit=crop&q=70")';
+  el.setAttribute('role', 'img');
+  el.setAttribute('aria-label', 'Room ' + (quiz.shown.length + (back ? 2 : 1)) + ' of ' + QUIZ_ROUNDS);
+  el.innerHTML = '<span class="quiz-stamp love">LOVE</span><span class="quiz-stamp nope">NOPE</span>';
+  return el;
+}
+function quizDraw() {
+  var deck = $('quizDeck');
+  deck.innerHTML = '';
+  $('quizDots').innerHTML = '';
+  for (var i = 0; i < QUIZ_ROUNDS; i++) $('quizDots').insertAdjacentHTML('beforeend', '<i' + (i < quiz.shown.length ? ' class="done"' : '') + '></i>');
+  quiz.card = quizNext();
+  // The next card waits behind; it is only a preview, the real next pick depends on this answer
+  if (quiz.shown.length < QUIZ_ROUNDS - 1) {
+    var peek = QUIZ_CARDS.find(function (c) { return c !== quiz.card && quiz.shown.indexOf(c) < 0; });
+    if (peek) deck.appendChild(quizCardEl(peek, true));
+  }
+  var el = quizCardEl(quiz.card, false);
+  deck.appendChild(el);
+  quizDrag(el);
+}
+function quizAnswer(love) {
+  var c = quiz.card, el = $('quizDeck').querySelector('.quiz-card:not(.back)');
+  if (!c || !el || el.dataset.gone) return;
+  el.dataset.gone = '1';
+  Object.keys(c.w).forEach(function (s) {
+    quiz.score[s] = (quiz.score[s] || 0) + (love ? c.w[s] : -0.6 * c.w[s]);
+    quiz.seen[s] = (quiz.seen[s] || 0) + c.w[s];
+  });
+  quiz.shown.push(c);
+  el.classList.remove('drag');
+  el.style.transform = 'translateX(' + (love ? 140 : -140) + '%) rotate(' + (love ? 24 : -24) + 'deg)';
+  el.style.opacity = '0';
+  setTimeout(function () { if (quiz.shown.length >= QUIZ_ROUNDS) quizFinish(); else quizDraw(); }, 300);
+}
+// Drag to swipe: past 90 px it counts; the stamps fade in as the card moves
+function quizDrag(el) {
+  var x0 = null, dx = 0;
+  el.addEventListener('pointerdown', function (e) { x0 = e.clientX; dx = 0; el.classList.add('drag'); el.setPointerCapture(e.pointerId); });
+  el.addEventListener('pointermove', function (e) {
+    if (x0 === null) return;
+    dx = e.clientX - x0;
+    el.style.transform = 'translateX(' + dx + 'px) rotate(' + dx / 18 + 'deg)';
+    el.querySelector('.love').style.opacity = Math.max(0, Math.min(1, dx / 90));
+    el.querySelector('.nope').style.opacity = Math.max(0, Math.min(1, -dx / 90));
+  });
+  function end() {
+    if (x0 === null) return;
+    x0 = null;
+    if (Math.abs(dx) > 90) return quizAnswer(dx > 0);
+    el.classList.remove('drag');
+    el.style.transform = '';
+    el.querySelectorAll('.quiz-stamp').forEach(function (s) { s.style.opacity = 0; });
+  }
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
+}
+function quizFinish() {
+  var ranked = STYLES.slice().sort(function (a, b) { return (quiz.score[b.id] || 0) - (quiz.score[a.id] || 0); });
+  var top = ranked[0], second = ranked[1];
+  var lovedAny = ranked.some(function (s) { return (quiz.score[s.id] || 0) > 0; });
+  quiz.result = top.id;
+  $('quizResultImg').src = IMG(top.img, 900);
+  $('quizResultName').textContent = top.name;
+  $('quizResultWhy').textContent = lovedAny
+    ? top.concept.charAt(0).toUpperCase() + top.concept.slice(1) + '.' + ((quiz.score[second.id] || 0) > 0 ? ' With a touch of ' + second.name + '.' : '')
+    : 'Nothing felt quite right, so this is the closest match. Noor can help you find a look that is truly yours.';
+  $('quizUse').textContent = 'Design in ' + top.name;
+  $('quizPlay').hidden = true;
+  $('quizResult').hidden = false;
+  $('quizUse').focus();
+}
+function quizStart() {
+  quiz = { shown: [], score: {}, seen: {}, card: null };
+  $('quizPlay').hidden = false;
+  $('quizResult').hidden = true;
+  quizDraw();
+}
+$('openQuiz').addEventListener('click', function () {
+  quizStart();
+  var d = $('quizDialog');
+  if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else { d.setAttribute('open', ''); }
+});
+$('quizLove').addEventListener('click', function () { quizAnswer(true); });
+$('quizNope').addEventListener('click', function () { quizAnswer(false); });
+$('quizAgain').addEventListener('click', quizStart);
+$('quizDialog').addEventListener('keydown', function (e) {
+  if ($('quizPlay').hidden) return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); quizAnswer(true); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); quizAnswer(false); }
+});
+$('quizUse').addEventListener('click', function () {
+  if (state.intensity === 'stage' && state.stageStyles.indexOf(quiz.result) >= 0) state.style = quiz.result;
+  else pickStyle(quiz.result);
+  refresh();
+  $('quizDialog').close();
+  $('styleField').scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
 
 // Compare slider: before on the left, after on the right
