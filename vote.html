@@ -32,6 +32,9 @@ h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(36px, 7vw, 56
 .lead.ar { direction: rtl; text-align: left; }
 h1 span[dir] { unicode-bidi: plaintext; }
 h1 span + span { font-family: 'Noto Kufi Arabic', var(--serif); font-size: .62em; margin-top: 6px; color: var(--muted); }
+.vbtn { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.vbtn.listening { background: var(--accent); border-color: var(--accent); color: #fff; }
+.vbtn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .live { margin: 8px 0 0; font-size: 13px; font-weight: 600; color: #2F7D4F; }
 .live i { font-size: 8px; vertical-align: 2px; animation: live 1.6s ease-in-out infinite; }
 @keyframes live { 50% { opacity: .25; } }
@@ -115,10 +118,13 @@ function render() {
     '<p class="lead">Tap the heart on the design you like best. You can change your mind any time.</p>' +
     '<p class="lead ar" dir="rtl">اضغط القلب على التصميم اللي عجبك أكتر. فيك تغيّر رأيك بأي وقت.</p>' +
     '<p class="live"><i class="fa-solid fa-circle" aria-hidden="true"></i> Results update live · النتيجة بتتحدّث لحالها</p>' +
-    '<div class="name-row"><label for="voterName">Your name · اسمك</label><input id="voterName" maxlength="40" placeholder="e.g. Mama, Ahmad" dir="auto"></div>' +
+    '<div class="name-row"><label for="voterName">Your name · اسمك</label><input id="voterName" maxlength="40" placeholder="e.g. Mama, Ahmad" dir="auto">' +
+    '<button type="button" class="vbtn" id="nameMic" aria-label="Say your name"><i class="fa-solid fa-microphone" aria-hidden="true"></i></button>' +
+    '<button type="button" class="vbtn" id="nameLang"></button></div>' +
     '<p class="thanks" id="thanks" role="status"></p><div class="grid" id="grid"></div>');
   $('voterName').value = savedName();
   $('voterName').addEventListener('input', function () { try { localStorage.setItem('makeover-voter-name', this.value.trim()); } catch (e) {} });
+  wireNameVoice();
   poll.items.forEach(function (it, i) {
     var n = poll.counts[i] || 0;
     var card = document.createElement('article');
@@ -189,10 +195,40 @@ async function zoom(it) {
 $('zoomClose').addEventListener('click', function () { $('zoom').close(); });
 $('zoom').addEventListener('click', function (e) { if (e.target === this) this.close(); });
 
+// Say your name instead of typing it, in Arabic or English (the same choice as the main site)
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var lang = (function () { try { return localStorage.getItem('makeover-voice-lang'); } catch (e) { return null; } })() || (/^ar/i.test(navigator.language || '') ? 'ar' : 'en');
+function wireNameVoice() {
+  $('nameMic').hidden = !SR;
+  $('nameLang').hidden = !SR;
+  // Names the language it switches to, like the switches on the main site
+  $('nameLang').textContent = lang === 'ar' ? 'EN' : 'ع';
+  $('nameLang').setAttribute('aria-label', lang === 'ar' ? 'Voice is Arabic. Switch to English' : 'Voice is English. التبديل للعربي');
+  $('nameLang').onclick = function () {
+    lang = lang === 'ar' ? 'en' : 'ar';
+    try { localStorage.setItem('makeover-voice-lang', lang); } catch (e) {}
+    wireNameVoice();
+  };
+  $('nameMic').onclick = function () {
+    var rec = new SR(), mic = this;
+    rec.lang = lang === 'ar' ? 'ar-JO' : 'en-US';
+    rec.interimResults = true;
+    mic.classList.add('listening');
+    rec.onresult = function (ev) {
+      var s = '';
+      for (var i = 0; i < ev.results.length; i++) s += ev.results[i][0].transcript;
+      $('voterName').value = s.trim().slice(0, 40);
+      $('voterName').dispatchEvent(new Event('input'));
+    };
+    rec.onend = rec.onerror = function () { mic.classList.remove('listening'); };
+    rec.start();
+  };
+}
+
 // Live results: check every few seconds while the page is in view, and redraw only when the votes changed.
 // It waits while someone is typing their name or looking at a design full size, so nothing jumps under them.
 async function refresh() {
-  if (!poll || document.hidden || $('zoom').open || document.activeElement === $('voterName')) return;
+  if (!poll || document.hidden || $('zoom').open || document.activeElement === $('voterName') || document.querySelector('.vbtn.listening')) return;
   try {
     var res = await fetch(PROXY + '/picks/' + id + '?voter=' + voter);
     if (!res.ok) return;

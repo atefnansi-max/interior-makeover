@@ -498,6 +498,12 @@ footer .logo { font-size: 24px; color: var(--ink); }
 .settings-form { display: flex; flex-direction: column; gap: 18px; padding: 24px; }
 .board-dialog { width: min(900px, calc(100% - 32px)); }
 .board-stage canvas { display: block; width: 100%; height: auto; aspect-ratio: 297 / 210; margin: 4px 0 12px; border-radius: 12px; background: #F6F0E8; box-shadow: 0 10px 28px rgba(36,33,29,.16); }
+.voice-wrap { display: flex; align-items: center; gap: 8px; width: 100%; }
+.voice-wrap.tall { align-items: flex-start; }
+.voice-wrap > input, .voice-wrap > textarea { flex: 1 1 auto; min-width: 0; width: auto; }
+.voice-btn { flex: 0 0 auto; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--ink); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+.voice-btn.mic.listening { background: var(--accent); border-color: var(--accent); color: #fff; animation: mic-pulse 1.2s infinite; }
+.voice-btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .vote-q { width: 100%; min-height: 46px; margin: 4px 0 10px; padding: 0 14px; border: 1px solid var(--line); border-radius: 14px; font: inherit; color: var(--ink); background: var(--paper); }
 .vote-count { margin: 0 0 8px; font-size: 14px; font-weight: 600; color: var(--muted); }
 .vote-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-height: 44vh; overflow-y: auto; margin-bottom: 12px; padding: 2px; }
@@ -1446,7 +1452,7 @@ function buildPrompt(styleId) {
   var s = styleById(styleId || state.style);
   var room = roomById(state.room).name.toLowerCase();
   var keep = state.keep.map(function (k) { return k.toLowerCase(); });
-  var extra = $('keep').value.trim();
+  var extra = keepText();
   if (extra) keep.push(extra);
   if (state.intensity === 'stage') return buildStagingPrompt(s, room);
   var lines = [
@@ -1683,6 +1689,7 @@ $('generate').addEventListener('click', async function () {
   try {
     var hd = state.quality === 'hd';
     var photo = await resizeImage(state.photo, hd ? 2048 : 1536, 0.9);
+    await translateKeep();
     var queue = styles.slice();
     // Two at a time keeps Gemini from refusing a burst of five large requests
     async function worker() {
@@ -2271,6 +2278,7 @@ function setNoorLang(l) {
   $('noorInput').placeholder = NOOR_TEXT[l].placeholder;
   $('noorBubbleText').textContent = NOOR_TEXT[l].bubble;
   renderRefineLang();
+  syncVoiceLangs();
 }
 function resetNoor() {
   NOOR.msgs = []; NOOR.plan = null; NOOR.photoFor = null;
@@ -2406,6 +2414,82 @@ $('noorGenerate').addEventListener('click', function () {
     rec.start();
   });
 })();
+
+// Voice and Arabic for every other text field: a mic and an ع/EN switch beside the field.
+// The language is the one shared with Noor and Refine (NOOR.lang); switching it anywhere switches it everywhere.
+var VOICE_SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function addVoice(field) {
+  field.dir = 'auto';
+  var wrap = document.createElement('div');
+  wrap.className = 'voice-wrap' + (field.tagName === 'TEXTAREA' ? ' tall' : '');
+  field.parentNode.insertBefore(wrap, field);
+  wrap.appendChild(field);
+  var mic = document.createElement('button');
+  mic.type = 'button';
+  mic.className = 'voice-btn mic';
+  mic.innerHTML = '<i class="fa-solid fa-microphone" aria-hidden="true"></i>';
+  mic.setAttribute('aria-label', 'Speak instead of typing');
+  mic.hidden = !VOICE_SR;
+  var lang = document.createElement('button');
+  lang.type = 'button';
+  lang.className = 'voice-btn voice-lang';
+  lang.addEventListener('click', function () { setNoorLang(NOOR.lang === 'ar' ? 'en' : 'ar'); });
+  wrap.append(mic, lang);
+  syncVoiceLangs();
+  var rec = null;
+  mic.addEventListener('click', function () {
+    if (rec) { rec.stop(); return; }
+    rec = new VOICE_SR();
+    rec.lang = NOOR.lang === 'ar' ? 'ar-JO' : 'en-US';
+    rec.interimResults = true;
+    // Speech is added after what is already typed, so a note can be built up in several goes
+    var before = field.value.trim();
+    mic.classList.add('listening');
+    rec.onresult = function (ev) {
+      var s = '';
+      for (var i = 0; i < ev.results.length; i++) s += ev.results[i][0].transcript;
+      field.value = (before ? before + ' ' : '') + s.trim();
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    rec.onend = function () { mic.classList.remove('listening'); rec = null; field.focus(); };
+    rec.onerror = function (ev) {
+      mic.classList.remove('listening');
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') alert(NOOR.lang === 'ar' ? 'اسمح للمايك لهالموقع من إعدادات المتصفح، وجرب مرة تانية.' : 'Allow the microphone for this site in your browser, then tap the mic again.');
+    };
+    rec.start();
+  });
+}
+function syncVoiceLangs() {
+  document.querySelectorAll('.voice-lang').forEach(function (b) {
+    // Like the Refine and Noor switches, the button names the language it switches to
+    b.textContent = NOOR.lang === 'ar' ? 'EN' : 'ع';
+    b.title = NOOR.lang === 'ar' ? 'Voice is Arabic. Switch to English' : 'Voice is English. التبديل للعربي';
+    b.setAttribute('aria-label', b.title);
+  });
+}
+addVoice($('keep'));
+addVoice($('voteQuestion'));
+
+// The extra notes go into the design prompt; Arabic (often dialect) becomes clear English first, for free
+var keepEn = { src: '', en: '' };
+async function translateKeep() {
+  var src = $('keep').value.trim();
+  if (!/[؀-ۿ]/.test(src) || keepEn.src === src) return;
+  try {
+    var r = await askText([{ text: [
+      'Translate this note from a client about redesigning their ' + roomById(state.room).name.toLowerCase() + ' into clear English for an interior designer. It may be in Arabic dialect (Gulf, Levantine or Egyptian).',
+      'Keep every request and nothing else. Use plain English colour names (for example زيتي is olive green, كحلي is navy blue, سكري is cream).',
+      'Note: "' + src + '"',
+      'Reply with JSON only: {"english": ""}'
+    ].join('\n') }], 0.2);
+    keepEn = { src: src, en: String(r.english || '').trim() || src };
+  } catch (e) { keepEn = { src: src, en: src }; }
+}
+function keepText() {
+  var src = $('keep').value.trim();
+  return keepEn.src === src && keepEn.en ? keepEn.en : src;
+}
+
 setNoorLang(NOOR.lang);
 
 // ---------- Make 3D ----------
@@ -3977,6 +4061,8 @@ function editForm(g) {
     '<div class="gedit-actions"><button type="button" class="btn btn-soft cancel">Cancel</button><button type="submit" class="btn btn-accent">Save changes</button></div>';
   form.querySelector('#editName').value = g.name || '';
   form.querySelector('#editNote').value = g.note || '';
+  addVoice(form.querySelector('#editName'));
+  addVoice(form.querySelector('#editNote'));
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     g.name = form.querySelector('#editName').value.trim() || g.name;
