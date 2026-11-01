@@ -3174,7 +3174,8 @@ function boqRender() {
     var rate = priced ? boq.rates[l.code] : null, amount = rate != null ? rate * l.qty : null;
     if (amount) total += amount;
     h += '<tr><td>' + l.code + '</td><td>' + escapeHtml(l.item) + '<small>' + escapeHtml([l.note, l.calc].filter(Boolean).join(' · ')) + '</small></td><td>' + l.unit + '</td><td class="n">' + l.qty.toLocaleString('en') + '</td>' +
-      (priced ? '<td class="n">' + (rate != null ? money(rate, cur).replace(cur + ' ', '') : '–') + '</td><td class="n">' + (amount != null ? money(amount, cur).replace(cur + ' ', '') : '–') + '</td>' : '') + '</tr>';
+      // A zero rate means the line is covered by another (walls painted: the paint lines carry the cost)
+      (priced ? '<td class="n">' + (rate ? money(rate, cur).replace(cur + ' ', '') : '–') + '</td><td class="n">' + (amount ? money(amount, cur).replace(cur + ' ', '') : '–') + '</td>' : '') + '</tr>';
   });
   if (priced) h += '<tr class="total"><td colspan="5">Estimated total, supply and install (' + cur + ')</td><td class="n">' + money(total, cur).replace(cur + ' ', '') + '</td></tr>';
   $('boqTable').innerHTML = h + '</tbody>';
@@ -3215,6 +3216,7 @@ async function boqPrice() {
     var r = await askText([{ text: [
       'You are a quantity surveyor in ' + CURRENCIES[cur].market + '. Give typical ' + level + ' unit rates in ' + cur + ' for this interior fit-out bill of quantities, a ' + styleById(state.resultStyle).name + ' ' + roomById(state.resultRoom).name.toLowerCase() + '.',
       'Finishes (B codes) are supply and install per unit. Furniture (F codes) is the retail price per item. Paint lines are per litre of material plus labour.',
+      'Do not count the walls twice: if the wall finish (B03) is paint, give B03 the rate 0 because B04 and B05 cover it; if it is wallpaper, panelling, plaster or stone, price B03 per m² and give B04 and B05 the rate 0.',
       'Then suggest 3 value engineering ideas that keep the look but cost less, each with the code it affects and the approximate total saving in ' + cur + ' for the quantities given.',
       'Lines: ' + JSON.stringify(lines.map(function (l) { return { code: l.code, item: l.item + (l.note ? ' (' + l.note + ')' : ''), unit: l.unit, qty: l.qty }; })),
       'Reply with JSON only: {"rates":{"B01":0},"ve":[{"code":"B01","idea":"","saving":0}]}'
