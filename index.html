@@ -498,6 +498,8 @@ footer .logo { font-size: 24px; color: var(--ink); }
 .settings-form { display: flex; flex-direction: column; gap: 18px; padding: 24px; }
 .board-dialog { width: min(900px, calc(100% - 32px)); }
 .board-stage canvas { display: block; width: 100%; height: auto; aspect-ratio: 297 / 210; margin: 4px 0 12px; border-radius: 12px; background: #F6F0E8; box-shadow: 0 10px 28px rgba(36,33,29,.16); }
+.plan-stage { margin: 4px 0 12px; border-radius: 12px; background: #fff; border: 1px solid var(--line); min-height: 120px; }
+.plan-stage svg { display: block; width: 100%; height: auto; max-height: 62vh; }
 .boq-source { margin: 0 0 10px; font-size: 13.5px; font-weight: 600; color: var(--accent); }
 .boq-dims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
 .boq-dims fieldset { margin: 0; padding: 8px 10px 10px; border: 1px solid var(--line); border-radius: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
@@ -729,6 +731,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
             <a class="rail-btn" id="download" download="makeover.png" aria-label="Download"><i class="fa-solid fa-download" aria-hidden="true"></i><span>Download</span></a>
             <button type="button" class="rail-btn" id="save" aria-label="Save to my designs"><i class="fa-regular fa-bookmark" aria-hidden="true"></i><span id="saveLabel">Save</span></button>
             <button type="button" class="rail-btn" id="again" aria-label="Try another style"><i class="fa-solid fa-shuffle" aria-hidden="true"></i><span>New style</span></button>
+            <button type="button" class="rail-btn" id="planRail" aria-label="2D plan and DXF"><i class="fa-solid fa-vector-square" aria-hidden="true"></i><span>Plan</span></button>
             <button type="button" class="rail-btn" id="boqRail" aria-label="Bill of quantities"><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i><span>BOQ</span></button>
             <button type="button" class="rail-btn" id="boardRail" aria-label="Mood and material board"><i class="fa-solid fa-palette" aria-hidden="true"></i><span>Board</span></button>
             <button type="button" class="rail-btn" id="reelRail" aria-label="Make a Reel video"><i class="fa-solid fa-film" aria-hidden="true"></i><span>Reel</span></button>
@@ -865,6 +868,25 @@ footer .logo { font-size: 24px; color: var(--ink); }
         <button type="button" class="btn btn-soft" id="quizAgain">Retake</button>
       </div>
     </div>
+  </form>
+</dialog>
+
+<dialog class="settings-dialog board-dialog" id="planDialog" aria-labelledby="planTitle">
+  <form method="dialog" class="settings-form">
+    <div class="dialog-head">
+      <h3 class="serif" id="planTitle">2D <em>plan</em></h3>
+      <button type="submit" class="icon-btn" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <p class="dialog-lead">A dimensioned floor plan of this design, ready to open in AutoCAD as a DXF (millimetres, with layers). Free, no tokens.</p>
+    <p class="boq-source" id="planSource"></p>
+    <div class="reel-progress" id="planProgress" role="status" hidden><span id="planProgressText">Measuring the room and placing the furniture...</span></div>
+    <div class="plan-stage" id="planStage" aria-label="Floor plan preview" role="img"></div>
+    <p class="error" id="planError" role="alert" hidden></p>
+    <div class="actions reel-actions">
+      <button type="button" class="btn btn-accent" id="planDxf" hidden><i class="fa-solid fa-compass-drafting" aria-hidden="true"></i> Download DXF</button>
+      <button type="button" class="btn btn-soft" id="planSvg" hidden><i class="fa-solid fa-image" aria-hidden="true"></i> Plan as SVG</button>
+    </div>
+    <p class="keynote">An AI estimate of the room from the design. Check every dimension on site before using it for construction.</p>
   </form>
 </dialog>
 
@@ -3282,6 +3304,240 @@ $('boqRail').addEventListener('click', async function () {
 });
 $('boqPrice').addEventListener('click', function () { if (boq.dims) boqPrice(); });
 $('boqCsv').addEventListener('click', function () { if (boq.dims) boqCsv(); });
+
+// ---------- 9. 2D plan and DXF ----------
+// Uses the 3D model's layout when it exists, else reads one from the design photo with the same free layout reader.
+// The plan is a list of simple shapes in millimetres (plan y points away from the camera, so the back wall is at
+// the top); the same list is drawn as an SVG preview and written as an AutoCAD R12 DXF with layers.
+var plan = { forResult: null, spec: null, source: '' };
+var PLAN_T = 200; // wall thickness, mm
+var PLAN_LAYERS = { 'A-WALL': 7, 'A-WALL-PATT': 8, 'A-DOOR': 30, 'A-GLAZ': 4, 'A-FURN': 8, 'A-FURN-RUG': 9, 'A-LITE': 2, 'A-ANNO-DIMS': 1, 'A-ANNO-TEXT': 7 };
+
+function planNice(type) { var s = String(type || '').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
+// Builds the shapes from a normalized room spec (meters, see room3d.js)
+function planShapes(spec) {
+  var S = [], T = PLAN_T, W = spec.W * 1000, D = spec.D * 1000;
+  var add = function (o) { S.push(o); };
+  var line = function (l, a, b) { add({ k: 'line', l: l, a: a, b: b }); };
+  var text = function (l, p, h, s, rot, align) { add({ k: 'text', l: l, p: p, h: h, s: s, rot: rot || 0, align: align || 'center' }); };
+  // Each wall: a point s mm along its inner face, the direction along it and the outward normal
+  var WALLS = {
+    back: { L: W, P: function (s) { return [-W / 2 + s, D / 2]; }, t: [1, 0], n: [0, 1] },
+    left: { L: D, P: function (s) { return [-W / 2, -D / 2 + s]; }, t: [0, 1], n: [-1, 0] },
+    right: { L: D, P: function (s) { return [W / 2, D / 2 - s]; }, t: [0, -1], n: [1, 0] },
+    front: { L: W, P: function (s) { return [W / 2 - s, -D / 2]; }, t: [-1, 0], n: [0, -1] }
+  };
+  var mv = function (p, v, k) { return [p[0] + v[0] * k, p[1] + v[1] * k]; };
+  var deg = function (v) { return Math.atan2(v[1], v[0]) * 180 / Math.PI; };
+  Object.keys(WALLS).forEach(function (name) {
+    var w = WALLS[name];
+    var ops = spec.openings.filter(function (o) { return o.wall === name; })
+      .map(function (o) { return { a: o.offset * 1000, b: (o.offset + o.width) * 1000, o: o }; })
+      .sort(function (x, y) { return x.a - y.a; });
+    // Solid wall pieces between the openings; the outer face runs on past the ends to close the corners
+    var cuts = [0];
+    ops.forEach(function (x) { cuts.push(x.a, x.b); });
+    cuts.push(w.L);
+    for (var i = 0; i < cuts.length; i += 2) {
+      var a = cuts[i], b = cuts[i + 1];
+      if (b - a < 1) continue;
+      var ea = a === 0 ? T : 0, eb = b === w.L ? T : 0;
+      var p1 = w.P(a), p2 = w.P(b), p3 = mv(mv(w.P(b), w.n, T), w.t, eb), p4 = mv(mv(w.P(a), w.n, T), w.t, -ea);
+      add({ k: 'poly', l: 'A-WALL-PATT', pts: [p1, p2, p3, p4], fill: true });
+      line('A-WALL', p1, p2);
+      line('A-WALL', p4, p3);
+      if (a > 0) line('A-WALL', p1, p4);
+      if (b < w.L) line('A-WALL', p2, mv(w.P(b), w.n, T));
+    }
+    ops.forEach(function (x) {
+      var o = x.o, mid = w.P((x.a + x.b) / 2), side = name === 'left' || name === 'right';
+      var labelAt = mv(mid, w.n, T + 260), rot = side ? 90 : 0;
+      if (o.type === 'window') {
+        [0, T].forEach(function (k) { line('A-GLAZ', mv(w.P(x.a), w.n, k), mv(w.P(x.b), w.n, k)); });
+        [0.4, 0.6].forEach(function (k) { line('A-GLAZ', mv(w.P(x.a), w.n, T * k), mv(w.P(x.b), w.n, T * k)); });
+        text('A-ANNO-TEXT', labelAt, 110, 'W ' + Math.round(x.b - x.a), rot);
+      } else if (o.type === 'door') {
+        // Leaf open at 90 degrees into the room, hinged at the start of the opening, with its swing arc
+        var hinge = w.P(x.a), r = x.b - x.a, inward = [-w.n[0], -w.n[1]];
+        line('A-DOOR', hinge, mv(hinge, inward, r));
+        var a0 = deg(inward), a1 = deg(w.t);
+        if (((a1 - a0) % 360 + 360) % 360 !== 90) { var tmp = a0; a0 = a1; a1 = tmp; }
+        add({ k: 'arc', l: 'A-DOOR', c: hinge, r: r, a0: a0, a1: a1 });
+        text('A-ANNO-TEXT', labelAt, 110, 'D ' + Math.round(r), rot);
+      } else {
+        text('A-ANNO-TEXT', labelAt, 110, 'OPENING ' + Math.round(x.b - x.a), rot);
+      }
+    });
+  });
+  // Furniture and lights (pieces hung on walls, like art and curtains, are left out of a floor plan)
+  spec.objects.forEach(function (o) {
+    if (o.wall) return;
+    var cx = o.x * 1000, cy = -o.z * 1000, w = o.w * 1000, d = o.d * 1000, th = o.rot;
+    var at = function (lx, lz) { return [cx + lx * Math.cos(th) + lz * Math.sin(th), -(o.z * 1000 - lx * Math.sin(th) + lz * Math.cos(th))]; };
+    var t = o.type;
+    if (/pendant|chandelier|ceiling_light/.test(t)) {
+      add({ k: 'circle', l: 'A-LITE', c: [cx, cy], r: 160 });
+      line('A-LITE', [cx - 220, cy - 220], [cx + 220, cy + 220]);
+      line('A-LITE', [cx - 220, cy + 220], [cx + 220, cy - 220]);
+      return;
+    }
+    if (/lamp/.test(t) && w < 700) { add({ k: 'circle', l: 'A-LITE', c: [cx, cy], r: Math.max(120, w / 2) }); return; }
+    if (/plant|tree|planter/.test(t) || o.shape === 'round') {
+      add({ k: 'circle', l: 'A-FURN', c: [cx, cy], r: Math.max(150, (w + d) / 4) });
+    } else {
+      add({ k: 'poly', l: t === 'rug' ? 'A-FURN-RUG' : 'A-FURN', pts: [at(-w / 2, -d / 2), at(w / 2, -d / 2), at(w / 2, d / 2), at(-w / 2, d / 2)] });
+    }
+    if (Math.min(w, d) >= 380 && t !== 'rug') text('A-ANNO-TEXT', [cx, cy], Math.min(110, Math.max(70, Math.min(w, d) / 5)), planNice(t), 0);
+  });
+  // Dimensions: overall inside width above the plan, depth on the left
+  var dim = function (a, b, off, label, rot) {
+    var a2 = mv(a, off, 1), b2 = mv(b, off, 1), u = Math.hypot(off[0], off[1]), on = [off[0] / u, off[1] / u];
+    line('A-ANNO-DIMS', mv(a, on, 80), mv(a2, on, 120));
+    line('A-ANNO-DIMS', mv(b, on, 80), mv(b2, on, 120));
+    line('A-ANNO-DIMS', a2, b2);
+    [a2, b2].forEach(function (p) { line('A-ANNO-DIMS', [p[0] - 70, p[1] - 70], [p[0] + 70, p[1] + 70]); });
+    text('A-ANNO-DIMS', mv([(a2[0] + b2[0]) / 2, (a2[1] + b2[1]) / 2], on, 150), 130, label, rot);
+  };
+  dim([-W / 2, D / 2 + T], [W / 2, D / 2 + T], [0, 650], String(Math.round(W)), 0);
+  dim([-W / 2 - T, -D / 2], [-W / 2 - T, D / 2], [-650, 0], String(Math.round(D)), 90);
+  // Room name and area, in the first spot clear of furniture (centre, then the middle of each side)
+  var boxes = spec.objects.filter(function (o) { return !o.wall && o.type !== 'rug'; }).map(function (o) {
+    var r = Math.max(o.w, o.d) * 500 + 250;
+    return [o.x * 1000 - r, -o.z * 1000 - r, o.x * 1000 + r, -o.z * 1000 + r];
+  });
+  var tagW = 1700, tagH = 650;
+  var spot = [[0, 0], [0, -D / 4], [0, D / 4], [-W / 4, 0], [W / 4, 0], [-W / 4, -D / 4], [W / 4, -D / 4], [-W / 4, D / 4], [W / 4, D / 4]].find(function (p) {
+    return !boxes.some(function (b) { return p[0] + tagW / 2 > b[0] && p[0] - tagW / 2 < b[2] && p[1] + tagH / 2 > b[1] && p[1] - tagH / 2 < b[3]; });
+  }) || [0, 0];
+  text('A-ANNO-TEXT', [spot[0], spot[1] + 160], 240, roomById(state.resultRoom).name.toUpperCase(), 0);
+  text('A-ANNO-TEXT', [spot[0], spot[1] - 170], 170, (W * D / 1e6).toFixed(1) + ' m²  ·  ceiling ' + Math.round(spec.H * 1000), 0);
+  // Title
+  text('A-ANNO-TEXT', [-W / 2 - T, -D / 2 - T - 650], 150, 'MAKEOVERLY  ·  ' + styleById(state.resultStyle).name + ' ' + roomById(state.resultRoom).name.toLowerCase() + '  ·  internal ' + Math.round(W) + ' × ' + Math.round(D) + ' mm  ·  ' + shortDate(), 0, 'left');
+  text('A-ANNO-TEXT', [-W / 2 - T, -D / 2 - T - 900], 110, 'AI estimate from the design. Verify all dimensions on site.', 0, 'left');
+  return S;
+}
+function planBounds(S) {
+  var b = [Infinity, Infinity, -Infinity, -Infinity];
+  var grow = function (p, r) { b[0] = Math.min(b[0], p[0] - (r || 0)); b[1] = Math.min(b[1], p[1] - (r || 0)); b[2] = Math.max(b[2], p[0] + (r || 0)); b[3] = Math.max(b[3], p[1] + (r || 0)); };
+  S.forEach(function (s) {
+    if (s.k === 'line') { grow(s.a); grow(s.b); }
+    else if (s.k === 'poly') s.pts.forEach(function (p) { grow(p); });
+    else if (s.k === 'arc' || s.k === 'circle') grow(s.c, s.r);
+    else if (s.k === 'text') {
+      // Rough text width: about 0.55 of the height per character
+      var len = String(s.s).length * s.h * 0.55;
+      if (s.align === 'left') { grow(s.p, s.h); grow([s.p[0] + len, s.p[1]]); }
+      else if (s.rot) { grow([s.p[0], s.p[1] - len / 2], s.h); grow([s.p[0], s.p[1] + len / 2], s.h); }
+      else { grow([s.p[0] - len / 2, s.p[1]], s.h); grow([s.p[0] + len / 2, s.p[1]], s.h); }
+    }
+  });
+  return b;
+}
+function planSvg(S) {
+  var b = planBounds(S), m = 500;
+  var x0 = b[0] - m, y0 = -(b[3] + m), w = b[2] - b[0] + 2 * m, h = b[3] - b[1] + 2 * m;
+  var Y = function (y) { return -y; };
+  var stroke = { 'A-WALL': 22, 'A-DOOR': 12, 'A-GLAZ': 10, 'A-FURN': 12, 'A-FURN-RUG': 10, 'A-LITE': 12, 'A-ANNO-DIMS': 8 };
+  var color = { 'A-WALL': '#24211D', 'A-DOOR': '#B5651D', 'A-GLAZ': '#2C7DA0', 'A-FURN': '#6B645B', 'A-FURN-RUG': '#9C948A', 'A-LITE': '#C9A227', 'A-ANNO-DIMS': '#7A1E2C', 'A-ANNO-TEXT': '#24211D' };
+  var out = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + [x0, y0, w, h].join(' ') + '" font-family="DM Sans, Arial, sans-serif"><rect x="' + x0 + '" y="' + y0 + '" width="' + w + '" height="' + h + '" fill="#fff"/>'];
+  var st = function (l) { return ' fill="none" stroke="' + color[l] + '" stroke-width="' + (stroke[l] || 10) + '"' + (l === 'A-FURN-RUG' ? ' stroke-dasharray="120 80"' : '') + ' stroke-linecap="round"'; };
+  S.forEach(function (s) {
+    if (s.k === 'poly' && s.fill) out.push('<polygon points="' + s.pts.map(function (p) { return p[0] + ',' + Y(p[1]); }).join(' ') + '" fill="#B9B1A6"/>');
+  });
+  S.forEach(function (s) {
+    if (s.k === 'line') out.push('<line x1="' + s.a[0] + '" y1="' + Y(s.a[1]) + '" x2="' + s.b[0] + '" y2="' + Y(s.b[1]) + '"' + st(s.l) + '/>');
+    else if (s.k === 'poly' && !s.fill) out.push('<polygon points="' + s.pts.map(function (p) { return p[0] + ',' + Y(p[1]); }).join(' ') + '"' + st(s.l) + '/>');
+    else if (s.k === 'circle') out.push('<circle cx="' + s.c[0] + '" cy="' + Y(s.c[1]) + '" r="' + s.r + '"' + st(s.l) + '/>');
+    else if (s.k === 'arc') {
+      var r = s.r, p0 = [s.c[0] + r * Math.cos(s.a0 * Math.PI / 180), s.c[1] + r * Math.sin(s.a0 * Math.PI / 180)], p1 = [s.c[0] + r * Math.cos(s.a1 * Math.PI / 180), s.c[1] + r * Math.sin(s.a1 * Math.PI / 180)];
+      out.push('<path d="M' + p0[0] + ' ' + Y(p0[1]) + ' A' + r + ' ' + r + ' 0 0 0 ' + p1[0] + ' ' + Y(p1[1]) + '"' + st(s.l) + ' stroke-dasharray="40 30"/>');
+    } else if (s.k === 'text') {
+      out.push('<text x="' + s.p[0] + '" y="' + Y(s.p[1]) + '" font-size="' + s.h + '" fill="' + color[s.l] + '" text-anchor="' + (s.align === 'left' ? 'start' : 'middle') + '" dominant-baseline="middle"' + (s.rot ? ' transform="rotate(' + (-s.rot) + ' ' + s.p[0] + ' ' + Y(s.p[1]) + ')"' : '') + '>' + escapeHtml(s.s) + '</text>');
+    }
+  });
+  return out.join('') + '</svg>';
+}
+// AutoCAD R12 ASCII DXF: header, line types, layers, then the entities
+function planDxf(S) {
+  var o = [];
+  var g = function () { for (var i = 0; i < arguments.length; i += 2) o.push(String(arguments[i]), String(arguments[i + 1])); };
+  var f = function (n) { return (Math.round(n * 1000) / 1000).toString(); };
+  var ascii = function (s) { return String(s).replace(/²/g, '2').replace(/×/g, 'x').replace(/·/g, '-').replace(/[^\x20-\x7E]/g, ''); };
+  // Units are millimetres (R12 has no units variable; the title on the plan says so)
+  g(0, 'SECTION', 2, 'HEADER', 9, '$ACADVER', 1, 'AC1009', 0, 'ENDSEC');
+  g(0, 'SECTION', 2, 'TABLES');
+  g(0, 'TABLE', 2, 'LTYPE', 70, 2);
+  g(0, 'LTYPE', 2, 'CONTINUOUS', 70, 0, 3, 'Solid line', 72, 65, 73, 0, 40, '0.0');
+  g(0, 'LTYPE', 2, 'DASHED', 70, 0, 3, '__  __  __', 72, 65, 73, 2, 40, '200.0', 49, '120.0', 49, '-80.0');
+  g(0, 'ENDTAB');
+  var names = Object.keys(PLAN_LAYERS);
+  g(0, 'TABLE', 2, 'LAYER', 70, names.length);
+  names.forEach(function (n) { g(0, 'LAYER', 2, n, 70, 0, 62, PLAN_LAYERS[n], 6, n === 'A-FURN-RUG' ? 'DASHED' : 'CONTINUOUS'); });
+  g(0, 'ENDTAB', 0, 'ENDSEC');
+  g(0, 'SECTION', 2, 'ENTITIES');
+  S.forEach(function (s) {
+    if (s.k === 'line') g(0, 'LINE', 8, s.l, 10, f(s.a[0]), 20, f(s.a[1]), 30, 0, 11, f(s.b[0]), 21, f(s.b[1]), 31, 0);
+    else if (s.k === 'circle') g(0, 'CIRCLE', 8, s.l, 10, f(s.c[0]), 20, f(s.c[1]), 30, 0, 40, f(s.r));
+    else if (s.k === 'arc') g(0, 'ARC', 8, s.l, 10, f(s.c[0]), 20, f(s.c[1]), 30, 0, 40, f(s.r), 50, f((s.a0 + 360) % 360), 51, f((s.a1 + 360) % 360));
+    else if (s.k === 'poly' && s.fill) {
+      // SOLID takes its corners in Z order: 1, 2, 4, 3
+      var p = s.pts;
+      g(0, 'SOLID', 8, s.l, 10, f(p[0][0]), 20, f(p[0][1]), 30, 0, 11, f(p[1][0]), 21, f(p[1][1]), 31, 0, 12, f(p[3][0]), 22, f(p[3][1]), 32, 0, 13, f(p[2][0]), 23, f(p[2][1]), 33, 0);
+    } else if (s.k === 'poly') {
+      g(0, 'POLYLINE', 8, s.l, 66, 1, 70, 1, 10, 0, 20, 0, 30, 0);
+      s.pts.forEach(function (p) { g(0, 'VERTEX', 8, s.l, 10, f(p[0]), 20, f(p[1]), 30, 0); });
+      g(0, 'SEQEND', 8, s.l);
+    } else if (s.k === 'text') {
+      g(0, 'TEXT', 8, s.l, 10, f(s.p[0]), 20, f(s.p[1]), 30, 0, 40, f(s.h), 1, ascii(s.s), 50, f(s.rot || 0));
+      if (s.align !== 'left') g(72, 1, 11, f(s.p[0]), 21, f(s.p[1]), 31, 0, 73, 2);
+    }
+  });
+  g(0, 'ENDSEC', 0, 'EOF');
+  return o.join('\r\n') + '\r\n';
+}
+function planDownload(text, type, ext) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: type }));
+  a.download = 'makeoverly-' + styleById(state.resultStyle).id + '-' + state.resultRoom + '-plan.' + ext;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+}
+$('planRail').addEventListener('click', async function () {
+  if (!state.result) return;
+  var dlg = $('planDialog');
+  if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); } else { dlg.setAttribute('open', ''); }
+  $('planError').hidden = true;
+  var forResult = state.result;
+  if (plan.forResult !== forResult) {
+    $('planStage').innerHTML = '';
+    $('planDxf').hidden = $('planSvg').hidden = true;
+    $('planSource').textContent = '';
+    try {
+      var mod = await import('./room3d.js');
+      var raw, source;
+      if (room3d.forResult === forResult && room3d.spec) { raw = room3d.spec; source = '3d'; }
+      else {
+        $('planProgress').hidden = false;
+        raw = await readLayout([await resizeImage(state.result, 1024, 0.85)], buildLayoutPrompt([]));
+        source = 'photo';
+      }
+      if (state.result !== forResult) return;
+      plan = { forResult: forResult, spec: mod.normalize(raw), source: source };
+    } catch (e) {
+      $('planError').textContent = friendlyError(e);
+      $('planError').hidden = false;
+      return;
+    } finally {
+      $('planProgress').hidden = true;
+    }
+  }
+  $('planSource').textContent = plan.source === '3d' ? 'Drawn from your 3D model.' : 'Measured from the design photo. Build the 3D model first for a more accurate plan.';
+  plan.shapes = planShapes(plan.spec);
+  $('planStage').innerHTML = planSvg(plan.shapes);
+  $('planDxf').hidden = $('planSvg').hidden = false;
+});
+$('planDxf').addEventListener('click', function () { planDownload(planDxf(plan.shapes), 'application/dxf', 'dxf'); });
+$('planSvg').addEventListener('click', function () { planDownload(planSvg(plan.shapes), 'image/svg+xml', 'svg'); });
 
 $('quizUse').addEventListener('click', function () {
   if (state.intensity === 'stage' && state.stageStyles.indexOf(quiz.result) >= 0) state.style = quiz.result;
