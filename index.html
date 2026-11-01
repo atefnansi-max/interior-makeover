@@ -3331,9 +3331,19 @@ function planShapes(spec) {
   var deg = function (v) { return Math.atan2(v[1], v[0]) * 180 / Math.PI; };
   Object.keys(WALLS).forEach(function (name) {
     var w = WALLS[name];
-    var ops = spec.openings.filter(function (o) { return o.wall === name; })
+    // Openings that overlap (the reader sometimes returns one big glazed wall as two windows) become one,
+    // keeping the type of the wider one
+    var ops = [];
+    spec.openings.filter(function (o) { return o.wall === name; })
       .map(function (o) { return { a: o.offset * 1000, b: (o.offset + o.width) * 1000, o: o }; })
-      .sort(function (x, y) { return x.a - y.a; });
+      .sort(function (x, y) { return x.a - y.a; })
+      .forEach(function (x) {
+        var last = ops[ops.length - 1];
+        if (last && x.a < last.b) {
+          if (x.b - x.a > last.b - last.a) last.o = x.o;
+          last.b = Math.max(last.b, x.b);
+        } else ops.push(x);
+      });
     // Solid wall pieces between the openings; the outer face runs on past the ends to close the corners
     var cuts = [0];
     ops.forEach(function (x) { cuts.push(x.a, x.b); });
@@ -3406,9 +3416,16 @@ function planShapes(spec) {
     return [o.x * 1000 - r, -o.z * 1000 - r, o.x * 1000 + r, -o.z * 1000 + r];
   });
   var tagW = 1700, tagH = 650;
-  var spot = [[0, 0], [0, -D / 4], [0, D / 4], [-W / 4, 0], [W / 4, 0], [-W / 4, -D / 4], [W / 4, -D / 4], [-W / 4, D / 4], [W / 4, D / 4]].find(function (p) {
-    return !boxes.some(function (b) { return p[0] + tagW / 2 > b[0] && p[0] - tagW / 2 < b[2] && p[1] + tagH / 2 > b[1] && p[1] - tagH / 2 < b[3]; });
-  }) || [0, 0];
+  // Score each candidate by how much furniture it covers; the first with the least wins
+  var cover = function (p) {
+    return boxes.reduce(function (sum, b) {
+      var ox = Math.min(p[0] + tagW / 2, b[2]) - Math.max(p[0] - tagW / 2, b[0]);
+      var oy = Math.min(p[1] + tagH / 2, b[3]) - Math.max(p[1] - tagH / 2, b[1]);
+      return sum + (ox > 0 && oy > 0 ? ox * oy : 0);
+    }, 0);
+  };
+  var spot = [[0, 0], [0, -D / 4], [0, D / 4], [-W / 4, 0], [W / 4, 0], [-W / 4, -D / 4], [W / 4, -D / 4], [-W / 4, D / 4], [W / 4, D / 4], [0, -D / 2 + 600], [0, D / 2 - 600]]
+    .reduce(function (best, p) { var c = cover(p); return c < best.c ? { p: p, c: c } : best; }, { p: [0, 0], c: Infinity }).p;
   text('A-ANNO-TEXT', [spot[0], spot[1] + 160], 240, roomById(state.resultRoom).name.toUpperCase(), 0);
   text('A-ANNO-TEXT', [spot[0], spot[1] - 170], 170, (W * D / 1e6).toFixed(1) + ' m²  ·  ceiling ' + Math.round(spec.H * 1000), 0);
   // Title
