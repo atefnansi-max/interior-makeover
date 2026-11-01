@@ -204,6 +204,13 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .refine h3 { font-size: 34px; }
 .refine .tips { margin: 4px 0 0; color: #3F4A3A; }
 .refine .chip { background: rgba(255,255,255,.75); border-color: transparent; }
+.season { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.season-label { flex-basis: 100%; font-size: 14px; font-weight: 700; color: #3F4A3A; }
+.season-btn { min-height: 46px; padding: 0 20px; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 16px rgba(36,33,29,.12); }
+.season-btn.ramadan { background: #1F2F4A; color: #F6D78B; }
+.season-btn.eid { background: var(--butter); color: var(--ink); }
+.season-btn:disabled { opacity: .5; cursor: wait; }
+.season-btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .refine-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .refine-row input { flex: 1 1 280px; min-width: 0; min-height: 52px; padding: 0 20px; border: 1px solid transparent; border-radius: 999px; background: var(--paper); font: inherit; color: var(--ink); }
 .refine-row .round { flex: 0 0 auto; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; background: var(--paper); color: var(--ink); font: inherit; font-size: 17px; font-weight: 700; cursor: pointer; }
@@ -851,6 +858,11 @@ footer .logo { font-size: 24px; color: var(--ink); }
       <h3 class="serif">Refine this <em>design</em></h3>
       <p class="tips" id="refineTip">Type or say a change, in English or Arabic. Everything else stays as it is.</p>
     </div>
+    <div class="season" id="seasonRow">
+      <span class="season-label" id="seasonLabel">Seasonal looks</span>
+      <button type="button" class="season-btn ramadan" data-season="ramadan"><i class="fa-solid fa-moon" aria-hidden="true"></i> <span>Ramadan</span></button>
+      <button type="button" class="season-btn eid" data-season="eid"><i class="fa-solid fa-star" aria-hidden="true"></i> <span>Eid</span></button>
+    </div>
     <div class="chips" id="refineChips"></div>
     <div class="refine-row">
       <label for="refineText" class="sr">Describe a change</label>
@@ -1490,13 +1502,15 @@ var REFINE_TEXT = {
     ideas: ['Warmer lighting', 'Lighter, brighter colors', 'Add more plants', 'Change the rug', 'More luxurious finishes', 'Add artwork on the wall', 'Cozier textiles'],
     placeholder: 'e.g. make the sofa sage green, add a large plant by the window',
     tip: 'Type or say a change, in English or Arabic. Everything else stays as it is.',
-    listen: 'Listening... say the change', mic: 'Say the change'
+    listen: 'Listening... say the change', mic: 'Say the change',
+    seasons: 'Seasonal looks', ramadan: 'Ramadan', eid: 'Eid'
   },
   ar: {
     ideas: ['إضاءة أدفى', 'ألوان أفتح', 'زيد نباتات', 'غيّر السجادة', 'تشطيبات أفخم', 'حط لوحة عالحيط', 'أقمشة أنعم'],
     placeholder: 'مثلاً: خلي الكنباية زيتي وزيد نباتات',
     tip: 'اكتب أو احكِ التعديل، وكل شي غيره بيضل متل ما هو.',
-    listen: 'عم بسمعك... احكِ التعديل', mic: 'احكِ التعديل'
+    listen: 'عم بسمعك... احكِ التعديل', mic: 'احكِ التعديل',
+    seasons: 'زينة المواسم', ramadan: 'رمضان', eid: 'العيد'
   }
 };
 function renderRefineLang() {
@@ -1509,6 +1523,9 @@ function renderRefineLang() {
   $('refineTip').textContent = t.tip;
   $('refineTip').dir = $('refineChips').dir = NOOR.lang === 'ar' ? 'rtl' : 'ltr';
   $('refineMic').setAttribute('aria-label', t.mic);
+  $('seasonLabel').textContent = t.seasons;
+  $('seasonRow').querySelector('.ramadan span').textContent = t.ramadan;
+  $('seasonRow').querySelector('.eid span').textContent = t.eid;
   $('refineLang').textContent = NOOR.lang === 'ar' ? 'EN' : 'ع';
   $('refineLang').title = NOOR.lang === 'ar' ? 'Switch to English' : 'التبديل للعربي';
 }
@@ -1543,25 +1560,33 @@ function showRefineError(msg) { $('refineError').textContent = msg; $('refineErr
 async function applyRefine() {
   var change = $('refineText').value.trim();
   if (!change) { showRefineError('Type a change first, or tap one of the ideas.'); $('refineText').focus(); return; }
+  await runEdit(async function () {
+    if (!/[؀-ۿ]/.test(change)) return buildRefinePrompt(change);
+    // Arabic: turn it into a precise English instruction first; if that fails, send it as written
+    try { return buildRefinePrompt(await toEditInstruction(change, await resizeImage(state.result, 768, 0.8))); }
+    catch (e) { return buildRefinePrompt(change); }
+  }, change.length > 28 ? change.slice(0, 26) + '…' : change, function () { $('refineText').value = ''; });
+}
+
+// Shared by typed changes and seasonal looks: edits the version on screen and adds the result as a new version
+async function runEdit(makePrompt, label, onDone) {
+  if ($('refineBtn').hidden) return;
   showRefineError('');
   if (!hasTokens()) return;
   $('refineBtn').hidden = true;
   $('refineLoading').hidden = false;
+  setSeasonBusy(true);
   try {
     var hd = state.quality === 'hd';
     var current = await resizeImage(state.result, hd ? 2048 : 1536, 0.9);
-    var instruction = change;
-    if (/[؀-ۿ]/.test(change)) {
-      try { instruction = await toEditInstruction(change, await resizeImage(state.result, 768, 0.8)); } catch (e) {}
-    }
-    var out = await callGemini(current, buildRefinePrompt(instruction), hd ? '2K' : '1K');
+    var out = await callGemini(current, await makePrompt(), hd ? '2K' : '1K');
     var notes = state.notes.filter(function (n) { return n.label !== 'Cost level'; })
       .concat(out.notes.filter(function (n) { return n.label === 'Cost level'; }));
-    var v = { img: out.img, notes: notes, cost: costLevel(out.notes, state.budget), style: state.resultStyle, label: change.length > 28 ? change.slice(0, 26) + '…' : change };
+    var v = { img: out.img, notes: notes, cost: costLevel(out.notes, state.budget), style: state.resultStyle, label: label };
     // Later edits of this style are replaced; other staged styles stay in the strip
     state.versions = state.versions.filter(function (x, i) { return i <= state.vIndex || x.style !== v.style; }).concat([v]);
     showVersion(state.versions.length - 1);
-    $('refineText').value = '';
+    if (onDone) onDone();
     recordDesign(v, v.img, ' · ' + v.label);
   } catch (e) {
     if (e.needTokens) { openTokens(); return; }
@@ -1569,8 +1594,45 @@ async function applyRefine() {
   } finally {
     $('refineBtn').hidden = false;
     $('refineLoading').hidden = true;
+    setSeasonBusy(false);
   }
 }
+
+// ---------- 4. Ramadan & Eid looks ----------
+// A styling layer on top of the design: decor, lights and a festive table; furniture and the room stay as they are
+var SEASONS = {
+  ramadan: {
+    label: 'Ramadan look',
+    decor: 'Ramadan evening. Add three to five Arabic lanterns (fanous) in brass, pierced metal or rattan that glow with warm candle-like light: some on the floor beside the seating or on the coffee table, and one hanging where there is a sensible ceiling or wall point. Add a delicate line of warm fairy lights along a shelf, the curtains or the window frame. Add one crescent moon and star ornament in brass or wood, hung on the wall or from the ceiling. On the coffee table, a tray with a bowl of dates, an Arabic coffee dallah and small finjan cups. Swap two or three cushions or a throw for deep jewel tones: emerald, burgundy and gold',
+    light: 'It is just after sunset: deep blue dusk outside the windows, the room lit warmly by the lanterns, fairy lights and table lamps, cosy and calm'
+  },
+  eid: {
+    label: 'Eid look',
+    decor: 'Eid celebration morning. Add fresh flower arrangements in white and blush roses with greenery, one large on the main table and a smaller one nearby. Add hanging gold and white crescent and star ornaments at different heights, and a soft garland of warm fairy lights. On the coffee table or a side table, a festive serving tray with ma\'amoul cookies, chocolates in a crystal bowl, dates, an Arabic coffee dallah with finjan cups and a teapot. Add a small stack of gift boxes wrapped in gold, white and soft green with satin ribbons. Use gold, white and blush accents that suit the existing palette',
+    light: 'Bright, joyful daylight from the windows with a warm, festive glow from the fairy lights'
+  }
+};
+function buildSeasonPrompt(id) {
+  var s = styleById(state.resultStyle), season = SEASONS[id];
+  return [
+    'Edit this interior photo to dress the room for a family celebration.',
+    'Keep exactly as shown: the architecture, camera angle, perspective, the furniture, its layout, materials and colors, the rug, curtains, artwork and fixtures. This is a decorating layer on top, not a redesign.',
+    'ADD: ' + season.decor + '.',
+    'Make the decor feel curated and tasteful in the ' + s.name + ' style, with real-world scale, correct shadows and contact with surfaces, and leave walkways clear. Do not overfill the room.',
+    'LIGHTING: ' + season.light + '.',
+    'Also reply with a short note in exactly this format:\nChange: <what you added>\nCost level: <exactly one of $, $$, $$$, $$$$, $$$$$ for the relative cost of the room as shown now>',
+    'No people, no text, letters or calligraphy anywhere in the image, no banners or signs, no watermarks, no extra or moved windows and doors, same aspect ratio as the input photo.'
+  ].join('\n');
+}
+function setSeasonBusy(on) {
+  document.querySelectorAll('#seasonRow button').forEach(function (b) { b.disabled = on; });
+}
+document.querySelectorAll('#seasonRow button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var id = b.dataset.season;
+    runEdit(function () { return buildSeasonPrompt(id); }, NOOR.lang === 'ar' ? 'زينة ' + REFINE_TEXT.ar[id] : SEASONS[id].label);
+  });
+});
 $('refineBtn').addEventListener('click', applyRefine);
 $('refineText').addEventListener('keydown', function (e) { if (e.key === 'Enter') applyRefine(); });
 
