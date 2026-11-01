@@ -252,6 +252,59 @@ summary { cursor: pointer; font-size: 14px; font-weight: 600; min-height: 32px; 
 .icon-btn { width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; background: transparent; color: var(--muted); text-decoration: none; }
 .icon-btn:hover { background: var(--ground); color: var(--ink); }
 
+/* Noor, the AI designer */
+.noor-av { width: 36px; height: 36px; border-radius: 12px; flex-shrink: 0; object-fit: cover; }
+.noor-bubble { position: absolute; left: 14px; bottom: 14px; z-index: 2; display: flex; align-items: center; gap: 10px; max-width: min(360px, calc(100% - 28px)); padding: 10px 16px 10px 10px; border: 0; border-radius: 18px; background: rgba(255,255,255,.97); color: var(--ink); text-align: left; font: inherit; font-size: 14px; line-height: 1.35; box-shadow: 0 10px 30px rgba(36,33,29,.22); cursor: pointer; animation: noor-pop .5s cubic-bezier(.2,1.4,.4,1); }
+.noor-bubble strong { display: block; color: var(--accent); }
+@keyframes noor-pop { from { transform: translateY(14px) scale(.9); opacity: 0; } }
+.noor-open-btn { gap: 8px; }
+.noor-open-btn img { width: 26px; height: 26px; border-radius: 8px; margin-left: -10px; }
+.noor-plan { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid #E9C9CE; border-radius: 16px; background: #FBF1F2; }
+.noor-plan .np-body { flex: 1; min-width: 0; }
+.noor-plan strong { display: block; font-size: 13px; color: var(--accent); }
+.noor-plan p { margin: 2px 0 6px; font-size: 13px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.noor-plan .np-actions { display: flex; gap: 6px; }
+.noor-plan .np-actions button { min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.noor { position: fixed; z-index: 30; right: 16px; top: 80px; bottom: 16px; width: min(400px, calc(100% - 32px)); display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 24px; background: var(--paper); box-shadow: 0 30px 80px rgba(36,33,29,.25); overflow: hidden; animation: noor-in .35s ease; }
+@keyframes noor-in { from { transform: translateX(30px); opacity: 0; } }
+.noor[hidden] { display: none; }
+.noor-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 14px; border-bottom: 1px solid var(--line); background: #FBF1F2; }
+.noor-head .who { flex: 1; min-width: 0; }
+.noor-head strong { display: block; font-family: var(--serif); font-size: 24px; font-weight: 400; line-height: 1; }
+.noor-head small { color: var(--muted); font-size: 12px; }
+.noor-head .icon-btn { width: 38px; height: 38px; }
+.noor-head .lang-btn { min-width: 38px; height: 34px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.noor-head .icon-btn[aria-pressed="true"] { color: var(--accent); background: var(--paper); }
+.noor-msgs { flex: 1; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 10px; padding: 14px; background: var(--ground); }
+.nm { display: flex; gap: 8px; align-items: flex-end; max-width: 92%; }
+.nm .tx { padding: 10px 14px; border-radius: 18px; font-size: 14.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nm.noor-says .tx { background: var(--paper); border: 1px solid var(--line); border-bottom-left-radius: 6px; }
+.nm.me { align-self: flex-end; }
+.nm.me .tx { background: var(--accent); color: #fff; border-bottom-right-radius: 6px; }
+.nm.err .tx { background: #FDF0EE; border: 1px solid #F0C9C0; color: #8A2B17; }
+.nm .noor-av { width: 30px; height: 30px; border-radius: 10px; }
+.typing { display: inline-flex; gap: 4px; padding: 14px 16px; }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: #B9AFA3; animation: blink 1.2s infinite; }
+.typing i:nth-child(2) { animation-delay: .2s; } .typing i:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .3; } 40% { opacity: 1; } }
+.noor-quick { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px 0; }
+.noor-quick button { min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.noor-quick button:hover { border-color: var(--accent); }
+.noor-apply { display: flex; gap: 8px; padding: 10px 14px 0; }
+.noor-apply .btn { flex: 1; min-height: 42px; padding: 0 12px; font-size: 14px; gap: 8px; }
+.noor-form { display: flex; gap: 8px; align-items: center; padding: 10px 14px calc(14px + env(safe-area-inset-bottom, 0px)); }
+.noor-form input { flex: 1; min-width: 0; min-height: 46px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; font: inherit; font-size: 15px; color: var(--ink); background: var(--paper); }
+.noor-form .round { width: 46px; height: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 999px; border: 0; font-size: 17px; cursor: pointer; }
+.noor-form .mic { background: var(--ground); color: var(--ink); border: 1px solid var(--line); }
+.noor-form .mic.listening { background: var(--accent); color: #fff; border-color: var(--accent); animation: mic-pulse 1.2s infinite; }
+@keyframes mic-pulse { 0% { box-shadow: 0 0 0 0 rgba(122,15,36,.45); } 70% { box-shadow: 0 0 0 12px rgba(122,15,36,0); } }
+.noor-form .send { background: var(--accent); color: #fff; }
+@media (max-width: 600px) {
+  .noor { left: 0; right: 0; bottom: 0; top: auto; width: auto; height: 82vh; border-radius: 24px 24px 0 0; animation-name: noor-up; }
+  @keyframes noor-up { from { transform: translateY(40px); opacity: 0; } }
+  .noor-bubble { font-size: 13px; }
+}
+
 /* Make 3D */
 .make3d { min-height: 40px; padding: 0 16px; font-size: 14px; gap: 8px; }
 .make3d small { font-size: 12px; font-weight: 600; opacity: .8; }
@@ -490,6 +543,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
           <figure class="shot single">
             <img id="previewImg" alt="Your uploaded room">
             <figcaption class="tag">Your photo</figcaption>
+            <button type="button" class="noor-bubble" id="noorBubble" hidden><img class="noor-av" src="assets/logo-mark.png" alt=""><span><strong>Noor, your AI designer</strong><span id="noorBubbleText">I have ideas for this room. Want to hear them?</span></span></button>
             <div class="ws-progress" hidden>
               <div class="loading" role="status">
                 <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
@@ -498,7 +552,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
             </div>
           </figure>
           <div class="ws-bar">
-            <span class="tips">Pick your settings, then press Generate.</span>
+            <button type="button" class="btn btn-accent noor-open-btn" id="openNoor"><img src="assets/logo-mark.png" alt=""><span>Plan it with Noor</span></button>
             <button type="button" class="btn btn-soft" id="changePhoto">Replace photo</button>
           </div>
         </div>
@@ -575,6 +629,14 @@ footer .logo { font-size: 24px; color: var(--ink); }
 
       <aside class="settings" aria-label="Design settings">
         <div class="settings-body">
+          <div class="noor-plan" id="noorPlan" hidden>
+            <img class="noor-av" src="assets/logo-mark.png" alt="">
+            <div class="np-body">
+              <strong>Noor's plan is on</strong>
+              <p id="noorPlanText"></p>
+              <div class="np-actions"><button type="button" id="noorPlanEdit">Talk to Noor</button><button type="button" id="noorPlanOff">Remove</button></div>
+            </div>
+          </div>
           <fieldset class="field">
             <legend class="label">Room type</legend>
             <div class="tiles" id="rooms"></div>
@@ -700,6 +762,27 @@ footer .logo { font-size: 24px; color: var(--ink); }
     <p class="error" id="signinError" role="alert" hidden></p>
   </form>
 </dialog>
+
+<aside class="noor" id="noor" aria-label="Noor, your AI designer" hidden>
+  <div class="noor-head">
+    <img class="noor-av" src="assets/logo-mark.png" alt="">
+    <div class="who"><strong>Noor</strong><small>Your AI designer · free, no tokens</small></div>
+    <button type="button" class="lang-btn" id="noorLang" title="Language">ع</button>
+    <button type="button" class="icon-btn" id="noorVoice" aria-pressed="false" aria-label="Read Noor's answers out loud"><i class="fa-solid fa-volume-xmark" aria-hidden="true"></i></button>
+    <button type="button" class="icon-btn" id="noorClose" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+  </div>
+  <div class="noor-msgs" id="noorMsgs" role="log" aria-live="polite"></div>
+  <div class="noor-quick" id="noorQuick"></div>
+  <div class="noor-apply" id="noorApplyRow" hidden>
+    <button type="button" class="btn btn-soft" id="noorApply"><i class="fa-solid fa-check" aria-hidden="true"></i> <span>Use this plan</span></button>
+    <button type="button" class="btn btn-accent" id="noorGenerate"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> <span>Use plan &amp; generate</span></button>
+  </div>
+  <form class="noor-form" id="noorForm" autocomplete="off">
+    <button type="button" class="round mic" id="noorMic" aria-label="Talk to Noor"><i class="fa-solid fa-microphone" aria-hidden="true"></i></button>
+    <input type="text" id="noorInput" placeholder="Ask Noor anything about your room" dir="auto" aria-label="Message to Noor">
+    <button type="submit" class="round send" aria-label="Send"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></button>
+  </form>
+</aside>
 
 <section id="result" class="wrap result">
   <div class="head">
@@ -937,6 +1020,8 @@ function setPhoto(file) {
   // A new photo starts a new design, so the old result and its versions are cleared
   reader.onload = function () {
     state.photo = reader.result;
+    state.brief = '';
+    resetNoor();
     state.result = '';
     state.versions = [];
     state.angles = [];
@@ -1053,6 +1138,7 @@ function buildPrompt() {
   ];
   if (keep.length) lines.push('KEEP these items exactly as they are, in the same position, size, shape, material and color: ' + keep.join(', ') + '. Design the new room around them; if a kept item overlaps with the pieces listed below, keep the existing one.');
   lines.push('DESIGN CONCEPT: ' + s.name + ', ' + s.concept + '.');
+  if (state.brief) lines.push('CLIENT BRIEF, agreed with the client by our designer; follow it closely unless it conflicts with KEEP: ' + state.brief);
   if (state.intensity === 'light') {
     lines.push('CHANGE: a light refresh. Keep the current furniture layout and main pieces; restyle wall color, textiles, cushions, rug, curtains, lighting fixtures, plants and accessories.');
   } else {
@@ -1436,6 +1522,239 @@ function closeLightbox() { $('lightbox').hidden = true; }
 $('lightboxClose').addEventListener('click', closeLightbox);
 $('lightbox').addEventListener('click', function (e) { if (e.target === $('lightbox')) closeLightbox(); });
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('lightbox').hidden) closeLightbox(); });
+
+// ---------- Noor, the AI designer ----------
+// Before generating, Noor looks at the room photo, suggests how to furnish it and chats (typing or voice,
+// Arabic or English). Her plan is kept in English so it can guide the image prompt. Chatting uses the
+// text model, which costs no tokens.
+var NOOR = { msgs: [], plan: null, photoFor: null, busy: false, lang: /^ar/i.test(navigator.language || '') ? 'ar' : 'en', speak: false, lastVoice: false };
+var NOOR_TEXT = {
+  en: { bubble: 'I have ideas for this room. Want to hear them?', placeholder: 'Ask Noor anything about your room', applied: 'Plan applied. Press Generate when you are ready.', fail: 'Noor could not answer this time.', retry: 'Try again', listen: 'Listening...' },
+  ar: { bubble: 'عندي أفكار لهالغرفة. بدك تسمعيها؟', placeholder: 'اسألي نور عن غرفتك', applied: 'تم تطبيق الخطة. اضغطي Generate لما تكوني جاهزة.', fail: 'نور ما قدرت ترد هالمرة.', retry: 'جربي مرة تانية', listen: 'عم بسمع...' }
+};
+
+function noorSystem() {
+  var room = roomById(state.room), style = state.style ? styleById(state.style).name : 'not chosen yet';
+  return [
+    'You are Noor, the warm, expert AI interior designer inside Makeoverly, with the eye of a senior interior architect.',
+    'You are looking at a photo of the client\'s room. Help them decide how to furnish and style it BEFORE the redesign image is generated.',
+    'Be friendly, concrete and brief: at most 90 words per reply, short sentences, no markdown symbols. Give practical advice: real clearances (90 cm walkways, 40 to 45 cm between sofa and coffee table, rug under the front legs of the sofa), furniture scaled to the room, daylight from the windows, budget, and regional living such as a majlis when it fits. Respect pieces the client wants to keep. Ask at most one question per reply.',
+    'LANGUAGE: reply in the language of the client\'s latest message. If it is Arabic, reply in simple, warm Arabic that a Levantine or Gulf reader understands.',
+    'The client\'s current settings: room type ' + room.name + ', style ' + style + (state.keep.length ? ', keeping ' + state.keep.join(', ') : '') + '.',
+    'Answer with JSON only, in exactly this shape: {"reply": "...", "plan": {"summary": "...", "room": "...", "style": "...", "keep": ["..."], "add": ["..."], "palette": ["..."], "layout": "..."}, "quick_replies": ["...", "...", "..."]}',
+    'plan is your current best furnishing plan, updated after every message and ALWAYS written in English (it goes to the image generator). summary: one or two sentences. room: one of ' + ROOMS.map(function (r) { return r.id; }).join(', ') + '. style: one of ' + STYLES.map(function (s) { return s.id; }).join(', ') + '. keep: only from ' + KEEP_ITEMS.join(', ') + ', for pieces visible in the photo the client should keep. add: up to 6 pieces to add, each with material and color. palette: 3 to 5 colors. layout: one sentence on where the main pieces go.',
+    'quick_replies: 3 short things the client might say next, in the client\'s language, at most 6 words each.'
+  ].join('\n');
+}
+
+async function noorCall() {
+  var photo = await resizeImage(state.photo, 1024, 0.85);
+  var contents = NOOR.msgs.map(function (m, i) {
+    var parts = [{ text: m.text }];
+    if (i === 0) parts.unshift({ inline_data: { mime_type: 'image/jpeg', data: photo.split(',')[1] } });
+    return { role: m.role, parts: parts };
+  });
+  var payload = { system_instruction: { parts: [{ text: noorSystem() }] }, contents: contents, generationConfig: { responseMimeType: 'application/json', temperature: 0.7 } };
+  var res = getKey()
+    ? await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + LAYOUT_MODEL + ':generateContent', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': getKey() }, body: JSON.stringify(payload) })
+    : await fetch(PROXY + '/generate?lib=' + LIBRARY, {
+        method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ model: LAYOUT_MODEL, payload: payload }) });
+  var json = await res.json().catch(function () { return {}; });
+  if (!res.ok) throw new Error((json.error && json.error.message) || 'Noor could not answer (' + res.status + ').');
+  var parts = (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts) || [];
+  var text = parts.map(function (p) { return p.thought ? '' : (p.text || ''); }).join('');
+  var m = text.match(/\{[\s\S]*\}/);
+  var out;
+  try { out = JSON.parse(m ? m[0] : text); } catch (e) { out = { reply: text.trim() }; }
+  return { raw: text, out: out };
+}
+
+function noorAdd(cls, text) {
+  var row = document.createElement('div');
+  row.className = 'nm ' + cls;
+  if (cls !== 'me') {
+    var av = document.createElement('img');
+    av.className = 'noor-av'; av.src = 'assets/logo-mark.png'; av.alt = '';
+    row.appendChild(av);
+  }
+  var tx = document.createElement('div');
+  tx.className = 'tx';
+  tx.dir = 'auto';
+  if (text === null) tx.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+  else tx.textContent = text;
+  row.appendChild(tx);
+  $('noorMsgs').appendChild(row);
+  $('noorMsgs').scrollTop = $('noorMsgs').scrollHeight;
+  return row;
+}
+function noorQuick(list) {
+  var box = $('noorQuick');
+  box.innerHTML = '';
+  (list || []).slice(0, 3).forEach(function (q) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = q; b.dir = 'auto';
+    b.addEventListener('click', function () { noorAsk(q, false); });
+    box.appendChild(b);
+  });
+}
+function noorSpeak(text) {
+  if (!window.speechSynthesis || !text) return;
+  speechSynthesis.cancel();
+  var ar = /[؀-ۿ]/.test(text);
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = ar ? 'ar-SA' : 'en-US';
+  var v = speechSynthesis.getVoices().filter(function (x) { return x.lang && x.lang.toLowerCase().indexOf(ar ? 'ar' : 'en') === 0; });
+  var pick = v.find(function (x) { return /female|zira|aria|jenny|ava|samantha|google/i.test(x.name); }) || v[0];
+  if (pick) u.voice = pick;
+  u.rate = 1.02;
+  speechSynthesis.speak(u);
+}
+
+// Send a message (or, with no text, start the conversation)
+async function noorAsk(text, viaVoice) {
+  if (NOOR.busy || !state.photo) return;
+  NOOR.busy = true;
+  NOOR.lastVoice = !!viaVoice;
+  if (text) {
+    if (/[؀-ۿ]/.test(text)) setNoorLang('ar'); else if (/[a-z]/i.test(text)) setNoorLang('en');
+    NOOR.msgs.push({ role: 'user', text: text });
+    noorAdd('me', text);
+  } else {
+    NOOR.msgs.push({ role: 'user', text: NOOR.lang === 'ar'
+      ? 'ابدئي المحادثة بالعربي: بجملتين قولي شو شايفة بالغرفة (نوعها، الإضاءة، إحساس المساحة، القطع اللي بتستاهل نخليها)، بعدين اقترحي خطة فرش بثلاث أو أربع نقاط قصيرة، وبعدين اسألي سؤال واحد عن كيف بيستعملوا الغرفة.'
+      : 'Start the conversation in English: in two sentences say what you see (room type, light, how the space feels, pieces worth keeping), then propose a furnishing plan in three or four short lines, then ask one question about how they use the room.' });
+  }
+  noorQuick([]);
+  var typing = noorAdd('noor-says', null);
+  try {
+    var r = await noorCall();
+    typing.remove();
+    NOOR.msgs.push({ role: 'model', text: r.raw });
+    var reply = String(r.out.reply || '').trim() || (NOOR.lang === 'ar' ? 'تمام!' : 'Sure!');
+    noorAdd('noor-says', reply);
+    if (r.out.plan && r.out.plan.summary) { NOOR.plan = r.out.plan; $('noorApplyRow').hidden = false; }
+    noorQuick(r.out.quick_replies);
+    if (NOOR.speak || viaVoice) noorSpeak(reply);
+  } catch (e) {
+    typing.remove();
+    NOOR.msgs.pop();
+    var row = noorAdd('err', NOOR_TEXT[NOOR.lang].fail + ' ' + friendlyError(e));
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn btn-soft'; b.textContent = NOOR_TEXT[NOOR.lang].retry;
+    b.style.cssText = 'min-height:34px;padding:0 12px;font-size:13px;margin-left:8px';
+    b.addEventListener('click', function () { row.remove(); noorAsk(text, viaVoice); });
+    row.appendChild(b);
+  } finally {
+    NOOR.busy = false;
+  }
+}
+
+function setNoorLang(l) {
+  NOOR.lang = l;
+  $('noorLang').textContent = l === 'ar' ? 'EN' : 'ع';
+  $('noorLang').title = l === 'ar' ? 'Switch to English' : 'التبديل للعربي';
+  $('noorInput').placeholder = NOOR_TEXT[l].placeholder;
+  $('noorBubbleText').textContent = NOOR_TEXT[l].bubble;
+}
+function resetNoor() {
+  NOOR.msgs = []; NOOR.plan = null; NOOR.photoFor = null;
+  $('noorMsgs').innerHTML = '';
+  noorQuick([]);
+  $('noorApplyRow').hidden = true;
+  if (window.speechSynthesis) speechSynthesis.cancel();
+}
+function openNoor() {
+  if (!state.photo) { $('file').click(); return; }
+  $('noor').hidden = false;
+  if (NOOR.photoFor !== state.photo) {
+    resetNoor();
+    NOOR.photoFor = state.photo;
+    noorAsk('', false);
+  }
+  refresh();
+  if (DESKTOP.matches) $('noorInput').focus();
+}
+function closeNoor() { $('noor').hidden = true; if (window.speechSynthesis) speechSynthesis.cancel(); refresh(); }
+
+// Put Noor's plan into the settings: room, style, pieces to keep, and the brief for the prompt
+function applyNoorPlan() {
+  var p = NOOR.plan;
+  if (!p) return false;
+  if (p.room && roomById(p.room)) state.room = p.room;
+  if (p.style && STYLES.some(function (s) { return s.id === p.style; })) state.style = p.style;
+  if (Array.isArray(p.keep)) state.keep = p.keep.filter(function (k) { return KEEP_ITEMS.indexOf(k) >= 0; });
+  var bits = [String(p.summary || '')];
+  if (Array.isArray(p.add) && p.add.length) bits.push('Add: ' + p.add.slice(0, 6).join('; ') + '.');
+  if (Array.isArray(p.palette) && p.palette.length) bits.push('Palette: ' + p.palette.slice(0, 5).join(', ') + '.');
+  if (p.layout) bits.push('Layout: ' + p.layout);
+  state.brief = bits.join(' ').replace(/\s+/g, ' ').trim().slice(0, 900);
+  refresh();
+  return true;
+}
+$('openNoor').addEventListener('click', openNoor);
+$('noorBubble').addEventListener('click', openNoor);
+$('noorPlanEdit').addEventListener('click', openNoor);
+$('noorPlanOff').addEventListener('click', function () { state.brief = ''; refresh(); });
+$('noorClose').addEventListener('click', closeNoor);
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('noor').hidden) closeNoor(); });
+$('noorLang').addEventListener('click', function () { setNoorLang(NOOR.lang === 'ar' ? 'en' : 'ar'); });
+$('noorVoice').addEventListener('click', function () {
+  NOOR.speak = !NOOR.speak;
+  this.setAttribute('aria-pressed', String(NOOR.speak));
+  this.querySelector('i').className = NOOR.speak ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+  if (!NOOR.speak && window.speechSynthesis) speechSynthesis.cancel();
+});
+$('noorForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var v = $('noorInput').value.trim();
+  if (!v) return;
+  $('noorInput').value = '';
+  noorAsk(v, false);
+});
+$('noorApply').addEventListener('click', function () {
+  if (applyNoorPlan()) noorAdd('noor-says', NOOR_TEXT[NOOR.lang].applied);
+});
+$('noorGenerate').addEventListener('click', function () {
+  if (!applyNoorPlan()) return;
+  closeNoor();
+  $('generate').click();
+});
+
+// Voice: talk to Noor (Chrome and Edge support speech recognition)
+(function () {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { $('noorMic').hidden = true; return; }
+  var rec = null;
+  $('noorMic').addEventListener('click', function () {
+    if (rec) { rec.stop(); return; }
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    rec = new SR();
+    rec.lang = NOOR.lang === 'ar' ? 'ar-JO' : 'en-US';
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    var finalText = '';
+    $('noorMic').classList.add('listening');
+    $('noorInput').placeholder = NOOR_TEXT[NOOR.lang].listen;
+    rec.onresult = function (ev) {
+      var s = '';
+      for (var i = 0; i < ev.results.length; i++) s += ev.results[i][0].transcript;
+      $('noorInput').value = s;
+      if (ev.results[ev.results.length - 1].isFinal) finalText = s;
+    };
+    rec.onend = function () {
+      $('noorMic').classList.remove('listening');
+      $('noorInput').placeholder = NOOR_TEXT[NOOR.lang].placeholder;
+      rec = null;
+      var v = (finalText || $('noorInput').value).trim();
+      $('noorInput').value = '';
+      if (v) noorAsk(v, true);
+    };
+    rec.onerror = function () { $('noorMic').classList.remove('listening'); };
+    rec.start();
+  });
+})();
+setNoorLang(NOOR.lang);
 
 // ---------- Make 3D ----------
 // 1) Gemini draws the redesigned room from four more viewpoints (the design itself is the front view).
@@ -2154,6 +2473,9 @@ function refresh() {
     : (state.quality === 'hd' ? 'HD takes about 1 to 2 minutes' : 'Takes about 20 to 40 seconds') + freeNote;
 
   $('noResult').hidden = has;
+  $('noorBubble').hidden = typeof NOOR !== 'object' || !state.photo || has || NOOR.photoFor === state.photo || !$('noor').hidden;
+  $('noorPlan').hidden = !state.brief;
+  if (state.brief) $('noorPlanText').textContent = state.brief;
   // A new or refined design needs a new 3D room; fall back to 2D until it is made
   if (state.view === '3d' && !busy3d && room3d.forResult !== state.result) state.view = 'side';
   pressAll('#viewToggle button', function (b) { return b.dataset.v === state.view; });
