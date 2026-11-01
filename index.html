@@ -72,6 +72,27 @@ nav .btn { min-height: 44px; padding: 0 20px; font-size: 15px; }
 .hero-art { flex: 1 1 480px; min-width: 0; position: relative; }
 .hero-photo { height: clamp(360px, 46vw, 600px); border-radius: 32px; overflow: hidden; background: var(--sage); }
 .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+/* Hero demo: an empty room is staged style after style, each one wiping in behind a scan line */
+.demo { position: relative; isolation: isolate; }
+.demo-scan, .demo-tag, .demo-pause { z-index: 10; }
+.demo img { position: absolute; inset: 0; }
+.demo-after { clip-path: inset(0 100% 0 0); transition: clip-path 1.5s cubic-bezier(.65,0,.35,1), opacity .9s ease; }
+.demo-after.on { clip-path: inset(0 0 0 0); }
+.demo-after.out { opacity: 0; }
+.demo-after.snap { transition: none; }
+.demo-scan { position: absolute; top: 0; bottom: 0; left: 0; width: 3px; margin-left: -1px; background: #fff; box-shadow: 0 0 18px 6px rgba(255,255,255,.65), 0 0 60px 18px rgba(217,161,62,.35); opacity: 0; pointer-events: none; }
+.demo-scan.run { opacity: 1; left: 100%; transition: left 1.5s cubic-bezier(.65,0,.35,1), opacity .2s; }
+.demo-tag { position: absolute; left: 16px; top: 18px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,.92); color: var(--ink); font-size: 13.5px; font-weight: 600; box-shadow: 0 8px 24px rgba(36,33,29,.12); }
+.demo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.demo.busy .demo-dot { background: #D9A13E; animation: demo-pulse 1s ease-in-out infinite; }
+.demo.staged .demo-dot { background: #3E8E5A; }
+@keyframes demo-pulse { 50% { opacity: .3; } }
+.demo-pause { position: absolute; right: 14px; bottom: 14px; width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(255,255,255,.88); color: var(--ink); font-size: 14px; cursor: pointer; }
+.demo-pause:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.demo-tag span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.demo-tag { max-width: calc(100% - 32px); }
+@media (max-width: 600px) { .hero-art .float.two { display: none; } .hero-art .float.one { max-width: calc(100% - 80px); } }
+@media (prefers-reduced-motion: reduce) { .demo-after, .demo-scan.run { transition: none; } .demo.busy .demo-dot { animation: none; } }
 .float { position: absolute; display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 10px; border-radius: 20px; background: var(--paper); box-shadow: 0 18px 40px rgba(36,33,29,.12); font-size: 14px; }
 .float img { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; }
 .float strong { display: block; font-size: 15px; }
@@ -520,10 +541,18 @@ footer .logo { font-size: 24px; color: var(--ink); }
     </ul>
   </div>
   <div class="hero-art">
-    <div class="hero-photo"><img src="https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?w=1600&q=80" alt="An elegant living room with tall arched black-framed windows, a fireplace and soft white seating"></div>
+    <div class="hero-photo demo" id="heroDemo" role="img" aria-label="Demo: an empty living room with tall windows, staged by Makeoverly in Modern, Contemporary Arabic and Japandi styles while the walls, floor and windows stay the same">
+      <img class="demo-base" src="assets/demo/empty.jpg" alt="">
+      <img class="demo-after" src="assets/demo/modern.jpg" alt="" data-name="Modern">
+      <img class="demo-after" src="assets/demo/arabic.jpg" alt="" data-name="Contemporary Arabic">
+      <img class="demo-after" src="assets/demo/japandi.jpg" alt="" data-name="Japandi">
+      <div class="demo-scan" aria-hidden="true"></div>
+      <div class="demo-tag" aria-hidden="true"><span class="demo-dot"></span><span id="demoTag">Your photo · empty room</span></div>
+      <button type="button" class="demo-pause" id="demoPause" aria-pressed="false" aria-label="Pause the demo"><i class="fa-solid fa-pause" aria-hidden="true"></i></button>
+    </div>
     <div class="float one" aria-hidden="true">
-      <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=200&q=60" alt="">
-      <div><strong>Modern classic living room</strong><span>Fireplace and sofa kept</span></div>
+      <img id="demoThumb" src="assets/demo/empty.jpg" alt="">
+      <div><strong id="demoTitle">Empty living room</strong><span id="demoSub">Walls, floor and windows kept</span></div>
     </div>
     <div class="float two" aria-hidden="true">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
@@ -2821,6 +2850,80 @@ setInterval(function () {
     t.textContent = Math.round((Date.now() - Number(l.dataset.start)) / 1000) + 's';
   });
 }, 500);
+
+// Hero demo: a real empty room staged by the app in three styles, played as a loop
+(function () {
+  var box = $('heroDemo');
+  var afters = Array.prototype.slice.call(box.querySelectorAll('.demo-after'));
+  var scan = box.querySelector('.demo-scan');
+  var still = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var step = -1, timer = null, paused = false, visible = true, started = false;
+  function label(tag, title, thumb, mode) {
+    $('demoTag').textContent = tag;
+    $('demoTitle').textContent = title;
+    $('demoThumb').src = thumb;
+    box.classList.toggle('busy', mode === 'busy');
+    box.classList.toggle('staged', mode === 'staged');
+  }
+  function sweep() {
+    scan.classList.remove('run');
+    void scan.offsetWidth;
+    if (!still.matches) scan.classList.add('run');
+  }
+  // Steps: empty room, then each style wipes in and holds; after the last one, fade back to the empty room
+  function next() {
+    step = (step + 1) % (afters.length + 1);
+    if (step === 0) {
+      afters.forEach(function (a) { a.classList.add('out'); });
+      label('Your photo · empty room', 'Empty living room', 'assets/demo/empty.jpg', '');
+      // Once faded out, reset each image instantly so it does not visibly wipe back
+      return later(function () {
+        afters.forEach(function (a) { a.classList.add('snap'); a.classList.remove('on', 'out'); a.style.zIndex = ''; });
+        void box.offsetWidth;
+        afters.forEach(function (a) { a.classList.remove('snap'); });
+      }, 900, 2600);
+    }
+    var a = afters[step - 1];
+    a.style.zIndex = step;
+    label('Staging in ' + a.dataset.name + '...', a.dataset.name + ' living room', a.getAttribute('src'), 'busy');
+    a.classList.add('on');
+    sweep();
+    later(function () { scan.classList.remove('run'); label('Staged · ' + a.dataset.name, a.dataset.name + ' living room', a.getAttribute('src'), 'staged'); }, 1500, 3800);
+  }
+  // Runs `then` after `mid` ms and the next step after `total` ms
+  function later(then, mid, total) {
+    setTimeout(then, mid);
+    timer = setTimeout(tick, total);
+  }
+  function tick() { timer = null; if (!paused && visible) next(); }
+  function resume() { if (started && !timer && !paused && visible) next(); }
+  $('demoPause').addEventListener('click', function () {
+    paused = !paused;
+    this.setAttribute('aria-pressed', String(paused));
+    this.setAttribute('aria-label', paused ? 'Play the demo' : 'Pause the demo');
+    this.querySelector('i').className = 'fa-solid fa-' + (paused ? 'play' : 'pause');
+    resume();
+  });
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (e) { visible = e[0].isIntersecting; resume(); }).observe(box);
+  }
+  // Reduced motion: show one staged result, no loop
+  if (still.matches) {
+    afters[0].classList.add('on');
+    label('Staged · ' + afters[0].dataset.name, afters[0].dataset.name + ' living room', afters[0].getAttribute('src'), 'staged');
+    $('demoPause').hidden = true;
+    return;
+  }
+  // Start once every image is ready so no wipe reveals a blank frame
+  var loaded = Promise.all([box.querySelector('.demo-base')].concat(afters).map(function (img) {
+    return img.complete ? Promise.resolve() : new Promise(function (done) {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    });
+  }));
+  Promise.race([loaded, new Promise(function (done) { setTimeout(done, 6000); })])
+    .then(function () { started = true; step = 0; timer = setTimeout(tick, 1800); });
+})();
 
 refresh();
 loadMe().then(loadGallery);
