@@ -145,7 +145,7 @@ function render() {
 async function load() {
   if (!/^[a-f0-9]{16}$/.test(id)) return fail('This vote link is not complete. Ask for the link again. الرابط ناقص، اطلب الرابط مرة تانية.');
   try {
-    var res = await fetch(PROXY + '/polls/' + id + '?voter=' + voter);
+    var res = await fetch(PROXY + '/picks/' + id + '?voter=' + voter);
     var json = await res.json();
     if (!res.ok) return fail((json.error && json.error.message) || 'Could not open this vote.');
     poll = json;
@@ -156,7 +156,7 @@ async function load() {
 
 async function vote(idx) {
   try {
-    var res = await fetch(PROXY + '/polls/' + id + '/vote', {
+    var res = await fetch(PROXY + '/picks/' + id + '/heart', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ voter: voter, name: $('voterName').value.trim(), idx: idx })
     });
@@ -177,7 +177,7 @@ async function zoom(it) {
   var d = $('zoom');
   if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
   try {
-    var res = await fetch(PROXY + '/polls/' + id + '/image/' + it.idx);
+    var res = await fetch(PROXY + '/picks/' + id + '/image/' + it.idx);
     if (res.ok) $('zoomImg').src = URL.createObjectURL(await res.blob());
   } catch (e) {}
 }

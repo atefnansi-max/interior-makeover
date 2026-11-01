@@ -321,7 +321,7 @@ async function pollsApi(request, env, url, headers) {
     // The full image while the design exists, else the copy of its thumbnail
     return imageResponse((item.image_key && await env.DESIGN_IMAGES.get(item.image_key)) || item.thumb, headers);
   }
-  if (method === 'POST' && parts[2] === 'vote') {
+  if (method === 'POST' && (parts[2] === 'heart' || parts[2] === 'vote')) {
     let body;
     try { body = await request.json(); } catch (e) { return json({ error: { message: 'Invalid request.' } }, 400, headers); }
     const voter = String(body.voter || ''), idx = Number(body.idx);
@@ -397,7 +397,8 @@ export default {
         if (res) return res;
       }
       if (url.pathname === '/designs' || url.pathname.startsWith('/designs/')) return await designsApi(request, env, url, headers);
-      if (url.pathname === '/polls' || url.pathname.startsWith('/polls/')) return await pollsApi(request, env, url, headers);
+      // /picks is the main path; /polls stays as an alias. Some ad blockers stop any request with "/polls" in it
+      if (/^\/(picks|polls)(\/|$)/.test(url.pathname)) return await pollsApi(request, env, url, headers);
       if (request.method === 'POST' && url.pathname === '/generate') return await generateApi(request, env, url, headers);
     } catch (e) {
       return json({ error: { message: 'The server had a problem. Please try again.' } }, 500, headers);

@@ -3628,7 +3628,7 @@ function renderVotePick() {
 }
 async function renderVoteList() {
   try {
-    var r = await cloudCall('GET', '/polls');
+    var r = await cloudCall('GET', '/picks');
     $('voteMine').hidden = !r.polls.length;
     $('voteList').innerHTML = '';
     r.polls.forEach(function (p) {
@@ -3645,7 +3645,7 @@ async function renderVoteList() {
       });
       li.querySelector('[data-del]').addEventListener('click', async function () {
         if (!confirm('Delete this vote? The link will stop working.')) return;
-        try { await cloudCall('DELETE', '/polls/' + p.id); renderVoteList(); } catch (e) { alert(e.message); }
+        try { await cloudCall('DELETE', '/picks/' + p.id); renderVoteList(); } catch (e) { alert(e.message); }
       });
       $('voteList').appendChild(li);
     });
@@ -3668,7 +3668,7 @@ $('voteCreate').addEventListener('click', async function () {
   b.disabled = true;
   $('voteError').hidden = true;
   try {
-    var r = await cloudCall('POST', '/polls', { title: $('voteQuestion').value.trim(), designIds: votePick });
+    var r = await cloudCall('POST', '/picks', { title: $('voteQuestion').value.trim(), designIds: votePick });
     var link = voteLink(r.id);
     $('voteLink').value = link;
     var msg = $('voteQuestion').value.trim() + '\n' + link;
@@ -3680,7 +3680,10 @@ $('voteCreate').addEventListener('click', async function () {
     $('voteShare').hidden = false;
     renderVoteList();
   } catch (e) {
-    $('voteError').textContent = e.message;
+    // A request stopped inside the browser (no reply at all) is usually an ad blocker or a lost connection
+    $('voteError').textContent = e instanceof TypeError
+      ? 'Could not reach Makeoverly. Check your connection; if you use an ad blocker, allow this site and try again.'
+      : e.message;
     $('voteError').hidden = false;
   } finally {
     b.disabled = false;
