@@ -2,6 +2,7 @@
 // - /generate: AI proxy. Our Gemini key stays in the GEMINI_KEY secret. Each successful image costs 10 tokens.
 // - /me, /auth/google, /auth/logout: guest accounts (50 free tokens) and Google sign-in with sessions.
 // - /designs: generated and saved designs (D1 for details, KV for full images), owned by a guest or a Google account.
+// - /polls: family votes. The owner shares some designs; anyone with the link hearts one favourite.
 
 // The text model only reads a room's layout for the 3D view; it returns no image, so it costs no tokens
 const TEXT_MODEL = 'gemini-3.8-flash';
@@ -19,6 +20,10 @@ const MAX_DESIGNS = 300;
 const MAX_IMAGE_CHARS = 14 * 1024 * 1024;
 const MAX_THUMB_CHARS = 400 * 1024;
 const LIST_COLUMNS = 'id, name, note, style, room, cost, thumb, favorite, kind, created_at, updated_at';
+const POLL_RE = /^[a-f0-9]{16}$/;
+const VOTER_RE = /^[a-f0-9]{32}$/;
+const MAX_POLLS = 50;
+const VOTES_PER_DAY = 200; // per connection, against spam on public links
 
 function cors(origin, env) {
   const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim());
@@ -232,6 +237,110 @@ async function designsApi(request, env, url, headers) {
   return json({ error: { message: 'Not found.' } }, 404, headers);
 }
 
+// ---------- Family votes ----------
+function imageResponse(dataUrl, headers) {
+  const m = /^data:([\w/+.-]+);base64,(.*)$/.exec(dataUrl || '');
+  if (!m) return json({ error: { message: 'Image not found.' } }, 404, headers);
+  const bytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
+  return new Response(bytes, { status: 200, headers: { ...headers, 'Content-Type': m[1], 'Cache-Control': 'public, max-age=86400' } });
+}
+async function pollResults(env, id) {
+  const [{ results: items }, { results: votes }] = await Promise.all([
+    env.DB.prepare('SELECT idx, name, thumb FROM poll_items WHERE poll_id = ? ORDER BY idx').bind(id).all(),
+    env.DB.prepare('SELECT voter, name, idx, created_at FROM poll_votes WHERE poll_id = ? ORDER BY created_at').bind(id).all()
+  ]);
+  const counts = items.map(it => votes.filter(v => v.idx === it.idx).length);
+  return { items, counts, votes };
+}
+async function pollsApi(request, env, url, headers) {
+  const method = request.method;
+  const parts = url.pathname.split('/').filter(Boolean); // ['polls', id?, 'image' | 'vote'?, idx?]
+  const id = parts[1];
+  if (id && !POLL_RE.test(id)) return json({ error: { message: 'This vote link is not valid.' } }, 404, headers);
+
+  // Owner: create, list and delete their own votes
+  if (!id && (method === 'POST' || method === 'GET')) {
+    const owner = await getOwner(request, env, url);
+    if (!owner) return json({ error: { message: 'Missing library code.' } }, 400, headers);
+    if (method === 'GET') {
+      const { results } = await env.DB.prepare(
+        'SELECT p.id, p.title, p.created_at, (SELECT COUNT(*) FROM poll_votes v WHERE v.poll_id = p.id) AS votes, (SELECT COUNT(*) FROM poll_items i WHERE i.poll_id = p.id) AS items FROM polls p WHERE p.owner = ? ORDER BY p.created_at DESC'
+      ).bind(owner.id).all();
+      return json({ polls: results }, 200, headers);
+    }
+    let body;
+    try { body = await request.json(); } catch (e) { return json({ error: { message: 'Invalid request.' } }, 400, headers); }
+    const ids = Array.isArray(body.designIds) ? [...new Set(body.designIds.map(String))].filter(x => ID_RE.test(x)) : [];
+    if (ids.length < 2 || ids.length > 6) return json({ error: { message: 'Choose 2 to 6 designs.' } }, 400, headers);
+    const count = await env.DB.prepare('SELECT COUNT(*) AS n FROM polls WHERE owner = ?').bind(owner.id).first();
+    if (count && count.n >= MAX_POLLS) return json({ error: { message: 'You have too many votes. Delete an old one first.' } }, 409, headers);
+    const rows = [];
+    for (const d of ids) {
+      const row = await env.DB.prepare('SELECT id, name, thumb, image_key FROM designs WHERE id = ? AND library = ?').bind(d, owner.id).first();
+      if (!row) return json({ error: { message: 'One of these designs is not in your library.' } }, 400, headers);
+      rows.push(row);
+    }
+    const pid = randomHex(8), now = new Date().toISOString();
+    const stmts = [env.DB.prepare('INSERT INTO polls (id, owner, title, created_at) VALUES (?, ?, ?, ?)').bind(pid, owner.id, clean(body.title, 120) || 'Which design do you like best?', now)];
+    rows.forEach((r, i) => stmts.push(env.DB.prepare('INSERT INTO poll_items (poll_id, idx, design_id, name, thumb, image_key) VALUES (?, ?, ?, ?, ?, ?)').bind(pid, i, r.id, r.name, r.thumb, r.image_key)));
+    await env.DB.batch(stmts);
+    return json({ id: pid }, 201, headers);
+  }
+  if (id && method === 'DELETE') {
+    const owner = await getOwner(request, env, url);
+    if (!owner) return json({ error: { message: 'Missing library code.' } }, 400, headers);
+    const poll = await env.DB.prepare('SELECT id FROM polls WHERE id = ? AND owner = ?').bind(id, owner.id).first();
+    if (!poll) return json({ error: { message: 'Vote not found.' } }, 404, headers);
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM poll_votes WHERE poll_id = ?').bind(id),
+      env.DB.prepare('DELETE FROM poll_items WHERE poll_id = ?').bind(id),
+      env.DB.prepare('DELETE FROM polls WHERE id = ?').bind(id)
+    ]);
+    return json({ ok: true }, 200, headers);
+  }
+
+  // Public, with the link: see the vote, see a design full size, vote
+  const poll = id && await env.DB.prepare('SELECT id, title, created_at FROM polls WHERE id = ?').bind(id).first();
+  if (!poll) return json({ error: { message: 'This vote was not found. It may have been deleted.' } }, 404, headers);
+
+  if (method === 'GET' && !parts[2]) {
+    const r = await pollResults(env, id);
+    const me = url.searchParams.get('voter') || '';
+    const mine = r.votes.find(v => v.voter === me);
+    return json({
+      title: poll.title, created_at: poll.created_at,
+      items: r.items, counts: r.counts,
+      voters: r.votes.map(v => ({ name: v.name, idx: v.idx })),
+      mine: mine ? mine.idx : null
+    }, 200, headers);
+  }
+  if (method === 'GET' && parts[2] === 'image') {
+    if (!/^\d$/.test(parts[3] || '')) return json({ error: { message: 'Image not found.' } }, 404, headers);
+    const item = await env.DB.prepare('SELECT thumb, image_key FROM poll_items WHERE poll_id = ? AND idx = ?').bind(id, Number(parts[3])).first();
+    if (!item) return json({ error: { message: 'Image not found.' } }, 404, headers);
+    // The full image while the design exists, else the copy of its thumbnail
+    return imageResponse((item.image_key && await env.DESIGN_IMAGES.get(item.image_key)) || item.thumb, headers);
+  }
+  if (method === 'POST' && parts[2] === 'vote') {
+    let body;
+    try { body = await request.json(); } catch (e) { return json({ error: { message: 'Invalid request.' } }, 400, headers); }
+    const voter = String(body.voter || ''), idx = Number(body.idx);
+    if (!VOTER_RE.test(voter) || !Number.isInteger(idx)) return json({ error: { message: 'Invalid vote.' } }, 400, headers);
+    const item = await env.DB.prepare('SELECT idx FROM poll_items WHERE poll_id = ? AND idx = ?').bind(id, idx).first();
+    if (!item) return json({ error: { message: 'Invalid vote.' } }, 400, headers);
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const key = 'votes:' + new Date().toISOString().slice(0, 10) + ':' + ip;
+    const used = Number(await env.USAGE.get(key) || 0);
+    if (used >= VOTES_PER_DAY) return json({ error: { message: 'Too many votes from this connection today.' } }, 429, headers);
+    await env.USAGE.put(key, String(used + 1), { expirationTtl: 172800 });
+    await env.DB.prepare('INSERT INTO poll_votes (poll_id, voter, name, idx, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (poll_id, voter) DO UPDATE SET idx = excluded.idx, name = excluded.name, created_at = excluded.created_at')
+      .bind(id, voter, clean(body.name, 40).trim(), idx, new Date().toISOString()).run();
+    const r = await pollResults(env, id);
+    return json({ counts: r.counts, voters: r.votes.map(v => ({ name: v.name, idx: v.idx })), mine: idx }, 200, headers);
+  }
+  return json({ error: { message: 'Not found.' } }, 404, headers);
+}
+
 // ---------- AI proxy ----------
 async function generateApi(request, env, url, headers) {
   if (!env.GEMINI_KEY) return json({ error: { message: 'The server has no Gemini key yet.' } }, 503, headers);
@@ -288,6 +397,7 @@ export default {
         if (res) return res;
       }
       if (url.pathname === '/designs' || url.pathname.startsWith('/designs/')) return await designsApi(request, env, url, headers);
+      if (url.pathname === '/polls' || url.pathname.startsWith('/polls/')) return await pollsApi(request, env, url, headers);
       if (request.method === 'POST' && url.pathname === '/generate') return await generateApi(request, env, url, headers);
     } catch (e) {
       return json({ error: { message: 'The server had a problem. Please try again.' } }, 500, headers);

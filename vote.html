@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Family vote · Makeoverly</title>
+<meta name="description" content="Help choose a room design: tap the heart on your favourite.">
+<meta property="og:title" content="Which design do you like best?">
+<meta property="og:description" content="Tap the heart on your favourite room design. أي تصميم عجبك أكتر؟">
+<meta property="og:image" content="https://atefnansi-max.github.io/interior-makeover/assets/demo/arabic.jpg">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap">
+<style>
+:root {
+  --ground: #FCF7F0; --paper: #FFFFFF; --ink: #24211D; --muted: #5F5A52; --line: #E7E0D5;
+  --sage: #DCE5D3; --butter: #FBE7BE; --accent: #7A0F24; --serif: 'Instrument Serif', Georgia, serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ground); color: var(--ink); font-family: 'DM Sans', 'Noto Kufi Arabic', system-ui, sans-serif; font-size: 16px; line-height: 1.55; }
+.ar { font-family: 'Noto Kufi Arabic', 'DM Sans', sans-serif; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+header { padding: 18px 0; border-bottom: 1px solid var(--line); background: var(--paper); }
+header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.logo { display: inline-flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 28px; color: var(--ink); text-decoration: none; }
+.logo img { width: 36px; height: 36px; border-radius: 10px; }
+.logo em { color: var(--accent); }
+h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(36px, 7vw, 56px); line-height: 1.05; margin: 28px 0 6px; }
+.lead { margin: 0 0 4px; color: var(--muted); }
+.lead.ar { direction: rtl; text-align: left; }
+h1 span[dir] { unicode-bidi: plaintext; }
+h1 span + span { font-family: 'Noto Kufi Arabic', var(--serif); font-size: .62em; margin-top: 6px; color: var(--muted); }
+.name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 18px 0 22px; }
+.name-row label { font-weight: 600; font-size: 15px; }
+.name-row input { flex: 1 1 200px; max-width: 320px; min-height: 46px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font: inherit; color: var(--ink); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; padding-bottom: 28px; }
+.card { position: relative; background: var(--paper); border: 2px solid transparent; border-radius: 22px; overflow: hidden; box-shadow: 0 10px 26px rgba(36,33,29,.08); transition: border-color .2s; }
+.card.mine { border-color: var(--accent); }
+.card .pic { display: block; width: 100%; aspect-ratio: 4 / 3; border: 0; padding: 0; background: #E9E2D8 center / cover no-repeat; cursor: zoom-in; }
+.card .body { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px 14px; }
+.card .title { font-weight: 700; font-size: 15px; line-height: 1.3; }
+.card .count { font-size: 13px; color: var(--muted); }
+.heart { flex-shrink: 0; width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--ground); color: var(--accent); font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(36,33,29,.12); transition: transform .15s; }
+.heart:hover { transform: scale(1.06); }
+.heart[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.heart:focus-visible, .pic:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.bar { height: 6px; margin: 0 14px 14px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s; }
+.leader { position: absolute; top: 12px; left: 12px; padding: 5px 12px; border-radius: 999px; background: var(--butter); font-size: 13px; font-weight: 700; }
+.voters { margin: 0 0 40px; padding: 16px 18px; border-radius: 18px; background: var(--sage); }
+.voters h2 { margin: 0 0 6px; font-size: 16px; }
+.voters p { margin: 0; color: #3F4A3A; }
+.msg { margin: 40px 0; padding: 20px; border-radius: 18px; background: var(--paper); border: 1px solid var(--line); }
+.thanks { min-height: 24px; margin: 0 0 14px; font-weight: 700; color: var(--accent); }
+footer { padding: 24px 0 40px; color: var(--muted); font-size: 14px; }
+footer a { color: var(--accent); font-weight: 600; }
+dialog { border: 0; padding: 0; background: transparent; max-width: 96vw; }
+dialog::backdrop { background: rgba(20,18,16,.85); }
+dialog img { display: block; max-width: 96vw; max-height: 88vh; border-radius: 14px; }
+dialog button { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.92); font-size: 18px; cursor: pointer; }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <a class="logo" href="./"><img src="assets/logo-mark.png" alt=""><span>Make<em>overly</em></span></a>
+  <span class="ar" style="font-size:14px;color:var(--muted)">تصويت العيلة</span>
+</div></header>
+
+<main class="wrap" id="main">
+  <p class="msg" id="loading">Loading the designs...</p>
+</main>
+
+<dialog id="zoom"><img id="zoomImg" alt=""><button type="button" id="zoomClose" aria-label="Close">✕</button></dialog>
+
+<footer class="wrap">Designs made with <a href="./">Makeoverly</a>, the AI interior studio.</footer>
+
+<script>
+var PROXY = 'https://makeover-proxy.makeover-group36.workers.dev';
+var id = new URLSearchParams(location.search).get('p') || '';
+var $ = function (i) { return document.getElementById(i); };
+var poll = null;
+
+// Each voter is a random id kept in this browser, so voting again changes the vote instead of adding one
+var voter = (function () {
+  var v = '';
+  try { v = localStorage.getItem('makeover-voter') || ''; } catch (e) {}
+  if (!/^[a-f0-9]{32}$/.test(v)) {
+    var a = new Uint8Array(16);
+    crypto.getRandomValues(a);
+    v = Array.from(a, function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+    try { localStorage.setItem('makeover-voter', v); } catch (e) {}
+  }
+  return v;
+})();
+function savedName() { try { return localStorage.getItem('makeover-voter-name') || ''; } catch (e) { return ''; } }
+
+function fail(msg) { $('main').innerHTML = '<p class="msg"></p>'; $('main').firstChild.textContent = msg; }
+
+function render() {
+  var total = poll.counts.reduce(function (a, b) { return a + b; }, 0);
+  var top = Math.max.apply(null, poll.counts);
+  var m = $('main');
+  m.innerHTML = '';
+  // A bilingual question ("English · عربي") gets one line per language so the two directions do not mix
+  var h = document.createElement('h1');
+  poll.title.split(' · ').forEach(function (part) { var s = document.createElement('span'); s.dir = 'auto'; s.style.display = 'block'; s.textContent = part; h.appendChild(s); });
+  m.appendChild(h);
+  m.insertAdjacentHTML('beforeend',
+    '<p class="lead">Tap the heart on the design you like best. You can change your mind any time.</p>' +
+    '<p class="lead ar" dir="rtl">اضغط القلب على التصميم اللي عجبك أكتر. فيك تغيّر رأيك بأي وقت.</p>' +
+    '<div class="name-row"><label for="voterName">Your name · اسمك</label><input id="voterName" maxlength="40" placeholder="e.g. Mama, Ahmad" dir="auto"></div>' +
+    '<p class="thanks" id="thanks" role="status"></p><div class="grid" id="grid"></div>');
+  $('voterName').value = savedName();
+  $('voterName').addEventListener('input', function () { try { localStorage.setItem('makeover-voter-name', this.value.trim()); } catch (e) {} });
+  poll.items.forEach(function (it, i) {
+    var n = poll.counts[i] || 0;
+    var card = document.createElement('article');
+    card.className = 'card' + (poll.mine === it.idx ? ' mine' : '');
+    card.innerHTML =
+      (total && n === top ? '<span class="leader">♥ Favourite so far</span>' : '') +
+      '<button type="button" class="pic" aria-label="See this design full size"></button>' +
+      '<div class="body"><div><div class="title"></div><div class="count"></div></div>' +
+      '<button type="button" class="heart" aria-pressed="' + (poll.mine === it.idx) + '"><i class="fa-' + (poll.mine === it.idx ? 'solid' : 'regular') + ' fa-heart" aria-hidden="true"></i></button></div>' +
+      '<div class="bar"><i style="width:' + (total ? Math.round(100 * n / total) : 0) + '%"></i></div>';
+    card.querySelector('.pic').style.backgroundImage = it.thumb ? 'url("' + it.thumb + '")' : '';
+    card.querySelector('.title').textContent = 'Design ' + (i + 1);
+    card.querySelector('.count').textContent = n + (n === 1 ? ' vote' : ' votes') + ' · ' + n + (n === 1 ? ' صوت' : ' أصوات');
+    card.querySelector('.heart').setAttribute('aria-label', 'Vote for design ' + (i + 1));
+    card.querySelector('.heart').addEventListener('click', function () { vote(it.idx); });
+    card.querySelector('.pic').addEventListener('click', function () { zoom(it); });
+    $('grid').appendChild(card);
+  });
+  var names = poll.voters.filter(function (v) { return v.name; });
+  if (poll.voters.length) {
+    var box = document.createElement('section');
+    box.className = 'voters';
+    box.innerHTML = '<h2>' + poll.voters.length + (poll.voters.length === 1 ? ' person has voted' : ' people have voted') + ' · صوّتوا</h2><p></p>';
+    box.querySelector('p').textContent = names.map(function (v) { return v.name + ' ♥ Design ' + (poll.items.findIndex(function (it) { return it.idx === v.idx; }) + 1); }).join('  ·  ');
+    m.appendChild(box);
+  }
+}
+
+async function load() {
+  if (!/^[a-f0-9]{16}$/.test(id)) return fail('This vote link is not complete. Ask for the link again. الرابط ناقص، اطلب الرابط مرة تانية.');
+  try {
+    var res = await fetch(PROXY + '/polls/' + id + '?voter=' + voter);
+    var json = await res.json();
+    if (!res.ok) return fail((json.error && json.error.message) || 'Could not open this vote.');
+    poll = json;
+    document.title = poll.title + ' · Makeoverly';
+    render();
+  } catch (e) { fail('Could not reach Makeoverly. Check your connection and try again.'); }
+}
+
+async function vote(idx) {
+  try {
+    var res = await fetch(PROXY + '/polls/' + id + '/vote', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voter: voter, name: $('voterName').value.trim(), idx: idx })
+    });
+    var json = await res.json();
+    if (!res.ok) { $('thanks').textContent = (json.error && json.error.message) || 'Could not save your vote.'; return; }
+    poll.counts = json.counts; poll.voters = json.voters; poll.mine = json.mine;
+    var n = poll.items.findIndex(function (it) { return it.idx === idx; }) + 1;
+    render();
+    $('thanks').innerHTML = '<span></span><span dir="rtl" class="ar" style="display:block"></span>';
+    $('thanks').firstChild.textContent = 'Thank you! Your heart is on design ' + n + '.';
+    $('thanks').lastChild.textContent = 'شكراً! صوتك للتصميم ' + n + '.';
+  } catch (e) { $('thanks').textContent = 'Could not reach Makeoverly. Check your connection and try again.'; }
+}
+
+// Full size: the server sends the design's image; the thumbnail shows until it arrives
+async function zoom(it) {
+  $('zoomImg').src = it.thumb || '';
+  var d = $('zoom');
+  if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
+  try {
+    var res = await fetch(PROXY + '/polls/' + id + '/image/' + it.idx);
+    if (res.ok) $('zoomImg').src = URL.createObjectURL(await res.blob());
+  } catch (e) {}
+}
+$('zoomClose').addEventListener('click', function () { $('zoom').close(); });
+$('zoom').addEventListener('click', function (e) { if (e.target === this) this.close(); });
+
+load();
+</script>
+</body>
+</html>
