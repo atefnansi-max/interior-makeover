@@ -145,6 +145,9 @@ nav .btn { min-height: 44px; padding: 0 20px; font-size: 15px; }
 .summary span.missing { border-style: dashed; color: var(--muted); font-weight: 500; }
 @media (max-width: 480px) { .tab { flex-direction: column; align-items: flex-start; gap: 6px; min-height: 0; padding: 10px; } .tab strong { font-size: 22px; } .tab small { display: none; } .panel { padding: 16px; } }
 .seg.seg-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.seg.seg-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 600px) { .seg.seg-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); border-radius: 26px; } }
+.seg-hint { margin: 8px 4px 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
 .seg button { min-height: 44px; padding: 4px 8px; border: 0; border-radius: 999px; background: transparent; font-size: 14px; font-weight: 600; line-height: 1.2; color: var(--muted); }
 .seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 2px 8px rgba(36,33,29,.1); }
 textarea { width: 100%; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--ink); font: inherit; resize: vertical; }
@@ -667,13 +670,15 @@ footer .logo { font-size: 24px; color: var(--ink); }
           </fieldset>
           <fieldset class="field">
             <legend class="label">Makeover level</legend>
-            <div class="seg" id="intensity">
+            <div class="seg seg-4" id="intensity">
               <button type="button" data-v="light" aria-pressed="false"><i class="fa-solid fa-brush" aria-hidden="true"></i> <span>Light refresh</span></button>
               <button type="button" data-v="full" aria-pressed="true"><i class="fa-solid fa-paint-roller" aria-hidden="true"></i> <span>Full makeover</span></button>
               <button type="button" data-v="bold" aria-pressed="false"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> <span>Bold &amp; creative</span></button>
+              <button type="button" data-v="stage" aria-pressed="false"><i class="fa-solid fa-couch" aria-hidden="true"></i> <span>Stage empty room</span></button>
             </div>
+            <p class="seg-hint" id="stageHint" hidden>For an empty or bare room: walls, floor and ceiling stay exactly as they are, and only furniture, rugs, lamps, art and decor are added.</p>
           </fieldset>
-          <fieldset class="field">
+          <fieldset class="field" id="keepField">
             <legend class="label">Keep existing items <small>optional</small></legend>
             <div class="tiles tiles-4" id="keepChips"></div>
           </fieldset>
@@ -1171,6 +1176,7 @@ function buildPrompt() {
   var keep = state.keep.map(function (k) { return k.toLowerCase(); });
   var extra = $('keep').value.trim();
   if (extra) keep.push(extra);
+  if (state.intensity === 'stage') return buildStagingPrompt(s, room);
   var lines = [
     'You are a senior interior designer creating a magazine-quality redesign of the ' + room + ' in this photo.',
     'KEEP: the architecture exactly as shown (walls, ceiling, floor plan, windows, doors, openings, room proportions) and the same camera position, lens, angle, perspective and framing.'
@@ -1198,6 +1204,29 @@ function buildPrompt() {
   lines.push('PHOTOGRAPHY: ' + MOODS[state.mood] + '.');
   lines.push('OUTPUT: one photorealistic editorial interior photograph in the style of a high-end design magazine, same camera position, lens and framing as the input, vertical lines kept straight as with a tilt-shift lens, crisp focus across the room, subtle ambient occlusion in corners, physically accurate materials with visible wood grain, fabric weave and stone veining, natural reflections on glass and metal, no CGI or plastic look, same aspect ratio as the input photo.');
   lines.push('Also reply with a short designer note in exactly this format:\nConcept: <one line>\nPalette: <3 to 5 colors>\nMaterials: <key materials>\nStatement piece: <one item>\nLighting: <one line>\nBudget tip: <one practical way this design fits the budget>\nCost level: <exactly one of $, $$, $$$, $$$$, $$$$$ for the relative cost to furnish and finish the room as shown, where $ is very low cost and $$$$$ is high-end luxury>');
+  lines.push('No people, no text inside the image, no watermarks, no extra or moved windows and doors.');
+  return lines.join('\n');
+}
+
+// Virtual staging: the room is empty or bare, so the shell stays untouched and only movable pieces are added
+function buildStagingPrompt(s, room) {
+  var r = roomById(state.room);
+  var lines = [
+    'You are a senior interior stylist doing professional virtual staging of this empty or bare ' + room + ' for a property listing.',
+    'KEEP EXACTLY, pixel-faithful: walls and their paint or finish, floor material and color, ceiling, skirting, cornices, built-in cabinets and wardrobes, kitchen and bathroom fixtures, windows, doors, radiators, switches, sockets and existing ceiling lights, plus the same camera position, lens, angle, perspective and framing. Do not repaint, re-floor, add panelling or change any architecture.',
+    'ADD ONLY movable furnishings: furniture, rugs, curtains, floor and table lamps, artwork, mirrors, plants, cushions, throws and a few accessories. If there is clutter, construction debris or leftover boxes, remove them.',
+    'DESIGN CONCEPT: ' + s.name + ', ' + s.concept + '.'
+  ];
+  if (state.brief) lines.push('CLIENT BRIEF, agreed with the client by our designer; follow it closely unless it conflicts with KEEP: ' + state.brief);
+  lines.push('BUDGET: ' + BUDGETS[state.budget] + '. Choose furniture that honestly matches this budget while keeping the style.');
+  lines.push('- Palette for furnishings and textiles, chosen to suit the existing walls and floor: ' + s.palette + '.');
+  lines.push('- Key pieces: ' + s.pieces + '.');
+  lines.push('- Styling: ' + s.styling + '.');
+  lines.push('SPACE PLANNING for a ' + room + ': ' + r.plan + '. Furniture must sit firmly on the floor with correct contact shadows, in true real-world scale relative to the doors, windows and ceiling height, and must not block doors, windows or built-ins.');
+  lines.push('Make it feel warm and move-in ready, the way a buyer imagines living there: one clear focal point, a balanced arrangement, and a mix of soft and natural textures, without overfilling the room.');
+  lines.push('PHOTOGRAPHY: ' + MOODS[state.mood] + '.');
+  lines.push('OUTPUT: one photorealistic real-estate interior photograph, same camera position, lens and framing as the input, vertical lines kept straight, lighting on the new furniture matching the light already in the photo, physically accurate materials, no CGI or plastic look, same aspect ratio as the input photo.');
+  lines.push('Also reply with a short designer note in exactly this format:\nConcept: <one line>\nPalette: <3 to 5 colors>\nMaterials: <key materials>\nStatement piece: <one item>\nLighting: <one line>\nBudget tip: <one practical way this staging fits the budget>\nCost level: <exactly one of $, $$, $$$, $$$$, $$$$$ for the relative cost to furnish the room as shown, where $ is very low cost and $$$$$ is high-end luxury>');
   lines.push('No people, no text inside the image, no watermarks, no extra or moved windows and doors.');
   return lines.join('\n');
 }
@@ -2626,6 +2655,9 @@ function refresh() {
   pressAll('#styles .style', function (b) { return b.dataset.id === state.style; });
   pressAll('#keepChips .tile', function (b) { return state.keep.indexOf(b.dataset.id) >= 0; });
   pressAll('#intensity button', function (b) { return b.dataset.v === state.intensity; });
+  var staging = state.intensity === 'stage';
+  $('stageHint').hidden = !staging;
+  $('keepField').hidden = staging;
   pressAll('#budget button', function (b) { return b.dataset.v === state.budget; });
   pressAll('#mood button', function (b) { return b.dataset.v === state.mood; });
   pressAll('#quality button', function (b) { return b.dataset.v === state.quality; });
