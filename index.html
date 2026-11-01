@@ -498,6 +498,24 @@ footer .logo { font-size: 24px; color: var(--ink); }
 .settings-form { display: flex; flex-direction: column; gap: 18px; padding: 24px; }
 .board-dialog { width: min(900px, calc(100% - 32px)); }
 .board-stage canvas { display: block; width: 100%; height: auto; aspect-ratio: 297 / 210; margin: 4px 0 12px; border-radius: 12px; background: #F6F0E8; box-shadow: 0 10px 28px rgba(36,33,29,.16); }
+.boq-source { margin: 0 0 10px; font-size: 13.5px; font-weight: 600; color: var(--accent); }
+.boq-dims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.boq-dims fieldset { margin: 0; padding: 8px 10px 10px; border: 1px solid var(--line); border-radius: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.boq-dims legend { padding: 0 4px; font-size: 13px; font-weight: 700; }
+.boq-dims label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
+.boq-dims input { width: 100%; min-height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); font: inherit; font-size: 15px; color: var(--ink); }
+@media (max-width: 640px) { .boq-dims { grid-template-columns: 1fr; } }
+.boq-table-wrap { overflow-x: auto; margin-bottom: 12px; }
+.boq-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.boq-table th { text-align: left; padding: 8px; background: var(--accent); color: #fff; font-weight: 700; white-space: nowrap; }
+.boq-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.boq-table td.n, .boq-table th.n { text-align: right; white-space: nowrap; }
+.boq-table tr.group td { background: var(--ground); font-weight: 700; }
+.boq-table tr.total td { font-weight: 800; border-top: 2px solid var(--ink); }
+.boq-table small { display: block; color: var(--muted); }
+.boq-ve { margin-bottom: 12px; padding: 14px 16px; border-radius: 16px; background: var(--sage); }
+.boq-ve h4 { margin: 0 0 8px; font-size: 15px; }
+.boq-ve ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; }
 /* Style quiz: a swipe deck of five rooms */
 .quiz-link { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px dashed var(--accent); border-radius: 999px; background: transparent; color: var(--accent); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .quiz-dots { display: flex; justify-content: center; gap: 6px; margin: 4px 0 10px; }
@@ -711,6 +729,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
             <a class="rail-btn" id="download" download="makeover.png" aria-label="Download"><i class="fa-solid fa-download" aria-hidden="true"></i><span>Download</span></a>
             <button type="button" class="rail-btn" id="save" aria-label="Save to my designs"><i class="fa-regular fa-bookmark" aria-hidden="true"></i><span id="saveLabel">Save</span></button>
             <button type="button" class="rail-btn" id="again" aria-label="Try another style"><i class="fa-solid fa-shuffle" aria-hidden="true"></i><span>New style</span></button>
+            <button type="button" class="rail-btn" id="boqRail" aria-label="Bill of quantities"><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i><span>BOQ</span></button>
             <button type="button" class="rail-btn" id="boardRail" aria-label="Mood and material board"><i class="fa-solid fa-palette" aria-hidden="true"></i><span>Board</span></button>
             <button type="button" class="rail-btn" id="reelRail" aria-label="Make a Reel video"><i class="fa-solid fa-film" aria-hidden="true"></i><span>Reel</span></button>
             <button type="button" class="rail-btn" id="shopRail" aria-label="Shop the look"><i class="fa-solid fa-bag-shopping" aria-hidden="true"></i><span>Shop</span></button>
@@ -846,6 +865,43 @@ footer .logo { font-size: 24px; color: var(--ink); }
         <button type="button" class="btn btn-soft" id="quizAgain">Retake</button>
       </div>
     </div>
+  </form>
+</dialog>
+
+<dialog class="settings-dialog board-dialog" id="boqDialog" aria-labelledby="boqTitle">
+  <form method="dialog" class="settings-form">
+    <div class="dialog-head">
+      <h3 class="serif" id="boqTitle">Bill of <em>quantities</em></h3>
+      <button type="submit" class="icon-btn" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <p class="dialog-lead">Finishes and furniture quantities for this room. Measure the room and correct the sizes below: every quantity updates at once. Free, no tokens.</p>
+    <p class="boq-source" id="boqSource"></p>
+    <div class="boq-dims" id="boqDims">
+      <fieldset><legend>Room (m)</legend>
+        <label>Width <input type="number" step="0.05" min="1" max="30" data-k="W"></label>
+        <label>Depth <input type="number" step="0.05" min="1" max="30" data-k="D"></label>
+        <label>Height <input type="number" step="0.05" min="2" max="8" data-k="H"></label>
+      </fieldset>
+      <fieldset><legend>Doors</legend>
+        <label>How many <input type="number" step="1" min="0" max="10" data-k="doors"></label>
+        <label>Width <input type="number" step="0.05" min="0.5" max="4" data-k="dw"></label>
+        <label>Height <input type="number" step="0.05" min="1.5" max="4" data-k="dh"></label>
+      </fieldset>
+      <fieldset><legend>Windows</legend>
+        <label>How many <input type="number" step="1" min="0" max="20" data-k="wins"></label>
+        <label>Width <input type="number" step="0.05" min="0.3" max="12" data-k="ww"></label>
+        <label>Height <input type="number" step="0.05" min="0.3" max="6" data-k="wh"></label>
+      </fieldset>
+    </div>
+    <div class="reel-progress" id="boqProgress" role="status" hidden><span id="boqProgressText">Measuring the room from the photo...</span></div>
+    <div class="boq-table-wrap"><table class="boq-table" id="boqTable"></table></div>
+    <div class="boq-ve" id="boqVe" hidden></div>
+    <p class="error" id="boqError" role="alert" hidden></p>
+    <div class="actions reel-actions">
+      <button type="button" class="btn btn-accent" id="boqPrice"><i class="fa-solid fa-calculator" aria-hidden="true"></i> <span id="boqPriceLabel">Price it</span></button>
+      <button type="button" class="btn btn-soft" id="boqCsv"><i class="fa-solid fa-file-excel" aria-hidden="true"></i> Download for Excel</button>
+    </div>
+    <p class="keynote">Quantities include 10% waste for flooring and 5% for skirting. Paint: 2 coats at 10 m² per litre, primer at 12 m² per litre. Rates are estimates; get quotes before ordering.</p>
   </form>
 </dialog>
 
@@ -3046,6 +3102,184 @@ $('boardPdf').addEventListener('click', async function () {
   catch (e) { $('boardError').textContent = friendlyError(e); $('boardError').hidden = false; }
   finally { b.disabled = false; }
 });
+
+// ---------- 8. Bill of quantities ----------
+// Room size comes from the 3D model when it was built, else the free text model estimates it from the photo.
+// The quantities are plain formulas on editable sizes; pricing and value engineering are one more free call.
+var boq = { forResult: null, dims: null, source: '', rates: null, ve: null, cur: null };
+var BOQ_COVER = 10, BOQ_PRIMER = 12, BOQ_COATS = 2;
+
+function boqFromSpec(raw) {
+  var r = raw.room || {}, ops = Array.isArray(raw.openings) ? raw.openings : [];
+  var doors = ops.filter(function (o) { return o.type === 'door' || o.type === 'arch' || o.type === 'opening'; });
+  var wins = ops.filter(function (o) { return o.type === 'window'; });
+  var avg = function (list, k, d) { return list.length ? list.reduce(function (s, o) { return s + (+o[k] || d); }, 0) / list.length : d; };
+  return { W: +r.width || 5, D: +r.depth || 4.5, H: +r.height || 2.8,
+    doors: doors.length, dw: avg(doors, 'width', 0.9), dh: avg(doors, 'height', 2.1),
+    wins: wins.length, ww: avg(wins, 'width', 1.4), wh: avg(wins, 'height', 1.5),
+    floor: (raw.floor || {}).material || '' };
+}
+async function boqEstimate() {
+  var img = await resizeImage(state.result, 1024, 0.85);
+  var r = await askText([imagePart(img), { text: [
+    'Estimate the real interior size of the room in this photo, in meters, for a bill of quantities.',
+    'Use references: a standard door is about 0.9 m wide and 2.1 m high, a sofa seat is about 0.45 m high, a dining chair seat about 0.46 m, kitchen counters 0.9 m, typical ceilings 2.6 to 3.2 m.',
+    'Count the doors and windows that belong to this room (including walls you can infer), with their typical width and height. Name the floor material.',
+    'Reply with JSON only: {"room":{"width":0,"depth":0,"height":0},"openings":[{"type":"door|window","width":0,"height":0}],"floor":{"material":""}}'
+  ].join('\n') }], 0.2);
+  return boqFromSpec(r);
+}
+function boqRound(n, step) { return Math.ceil(n / step - 1e-9) * step; }
+function boqNames() {
+  var mats = (board.forResult === state.result && board.data && board.data.materials) || [];
+  var find = function (re) { var m = mats.find(function (x) { return re.test((x.where || '') + ' ' + (x.name || '')); }); return m ? m.name + (m.finish ? ', ' + m.finish : '') : ''; };
+  return { floor: find(/floor/i), wall: find(/wall/i) };
+}
+// Lines: {code, item, note, unit, qty}
+function boqLines(d) {
+  var n = boqNames();
+  var perim = 2 * (d.W + d.D), area = d.W * d.D;
+  var doorsArea = d.doors * d.dw * d.dh, winsArea = d.wins * d.ww * d.wh;
+  var walls = Math.max(0, perim * d.H - doorsArea - winsArea);
+  var skirting = Math.max(0, perim - d.doors * d.dw);
+  var lines = [
+    { group: 'Floors' },
+    { code: 'B01', item: 'Floor finish', note: n.floor || (d.floor ? d.floor.charAt(0).toUpperCase() + d.floor.slice(1) : 'As board M01'), unit: 'm²', qty: boqRound(area * 1.10, 0.5), calc: area.toFixed(1) + ' m² + 10% waste' },
+    { code: 'B02', item: 'Skirting', note: 'Matching the floor or joinery', unit: 'lm', qty: boqRound(skirting * 1.05, 0.5), calc: skirting.toFixed(1) + ' m + 5% waste' },
+    { group: 'Walls & ceiling' },
+    { code: 'B03', item: 'Wall finish, net area', note: n.wall || 'Paint as palette', unit: 'm²', qty: boqRound(walls, 0.5), calc: perim.toFixed(1) + ' m × ' + d.H.toFixed(2) + ' m − doors and windows' },
+    { code: 'B04', item: 'Wall paint, ' + BOQ_COATS + ' coats', note: 'At ' + BOQ_COVER + ' m² per litre', unit: 'L', qty: boqRound(walls * BOQ_COATS / BOQ_COVER, 1) },
+    { code: 'B05', item: 'Wall primer, 1 coat', note: 'At ' + BOQ_PRIMER + ' m² per litre', unit: 'L', qty: boqRound(walls / BOQ_PRIMER, 1) },
+    { code: 'B06', item: 'Ceiling paint, ' + BOQ_COATS + ' coats', note: area.toFixed(1) + ' m² ceiling', unit: 'L', qty: boqRound(area * BOQ_COATS / BOQ_COVER, 1) }
+  ];
+  if (d.wins > 0) {
+    lines.push({ group: 'Windows' });
+    lines.push({ code: 'B07', item: 'Curtain track', note: d.wins + ' × (' + d.ww.toFixed(2) + ' m + 0.30 m)', unit: 'lm', qty: boqRound(d.wins * (d.ww + 0.3), 0.5) });
+    lines.push({ code: 'B08', item: 'Curtain fabric, 2× fullness', note: 'Drop ' + d.H.toFixed(2) + ' m', unit: 'm', qty: boqRound(d.wins * d.ww * 2, 0.5) });
+  }
+  // Furniture counts: Shop the look when it was run, else the board's pieces
+  var items = (shop.forResult === state.result && shop.items) || (board.forResult === state.result && board.data && board.data.pieces) || [];
+  if (items.length) {
+    lines.push({ group: 'Furniture & decor' });
+    items.forEach(function (p, i) { lines.push({ code: 'F' + String(i + 1).padStart(2, '0'), item: p.name || 'Item', note: [p.material, p.color].filter(Boolean).join(', '), unit: 'nr', qty: +p.qty || 1 }); });
+  }
+  return lines;
+}
+function boqRender() {
+  var d = boq.dims, lines = boqLines(d), cur = boq.cur || currency, total = 0;
+  var priced = !!boq.rates;
+  var h = '<thead><tr><th>Code</th><th>Item</th><th>Unit</th><th class="n">Qty</th>' + (priced ? '<th class="n">Rate</th><th class="n">Amount</th>' : '') + '</tr></thead><tbody>';
+  lines.forEach(function (l) {
+    if (l.group) { h += '<tr class="group"><td colspan="' + (priced ? 6 : 4) + '">' + escapeHtml(l.group) + '</td></tr>'; return; }
+    var rate = priced ? boq.rates[l.code] : null, amount = rate != null ? rate * l.qty : null;
+    if (amount) total += amount;
+    h += '<tr><td>' + l.code + '</td><td>' + escapeHtml(l.item) + '<small>' + escapeHtml([l.note, l.calc].filter(Boolean).join(' · ')) + '</small></td><td>' + l.unit + '</td><td class="n">' + l.qty.toLocaleString('en') + '</td>' +
+      (priced ? '<td class="n">' + (rate != null ? money(rate, cur).replace(cur + ' ', '') : '–') + '</td><td class="n">' + (amount != null ? money(amount, cur).replace(cur + ' ', '') : '–') + '</td>' : '') + '</tr>';
+  });
+  if (priced) h += '<tr class="total"><td colspan="5">Estimated total, supply and install (' + cur + ')</td><td class="n">' + money(total, cur).replace(cur + ' ', '') + '</td></tr>';
+  $('boqTable').innerHTML = h + '</tbody>';
+  boq.total = total;
+  $('boqVe').hidden = !(boq.ve && boq.ve.length);
+  if (boq.ve && boq.ve.length) {
+    $('boqVe').innerHTML = '<h4>Value engineering: ways to save</h4><ul></ul>';
+    boq.ve.forEach(function (v) {
+      var li = document.createElement('li');
+      li.textContent = (v.code ? v.code + ': ' : '') + v.idea + (v.saving ? ' (saves about ' + money(v.saving, cur) + ')' : '');
+      $('boqVe').querySelector('ul').appendChild(li);
+    });
+  }
+  $('boqPriceLabel').textContent = priced ? 'Re-price in ' + currency : 'Price it in ' + currency;
+}
+function boqFill() {
+  document.querySelectorAll('#boqDims input').forEach(function (inp) {
+    var v = boq.dims[inp.dataset.k];
+    inp.value = inp.dataset.k === 'doors' || inp.dataset.k === 'wins' ? Math.round(v) : (+v).toFixed(2);
+  });
+  $('boqSource').textContent = boq.source === '3d' ? 'Sizes from your 3D model. Check them against your own measurements.' : 'Sizes estimated from the photo. Measure the room and correct them for accurate quantities.';
+}
+document.querySelectorAll('#boqDims input').forEach(function (inp) {
+  inp.addEventListener('input', function () {
+    var v = parseFloat(inp.value);
+    if (!boq.dims || !(v >= 0)) return;
+    boq.dims[inp.dataset.k] = v;
+    boqRender();
+  });
+});
+async function boqPrice() {
+  var lines = boqLines(boq.dims).filter(function (l) { return !l.group; }), cur = currency;
+  var level = { budget: 'affordable', mid: 'mid-range', luxury: 'luxury' }[state.budget];
+  $('boqProgress').hidden = false;
+  $('boqProgressText').textContent = 'Pricing for ' + CURRENCIES[cur].market + '...';
+  $('boqError').hidden = true;
+  try {
+    var r = await askText([{ text: [
+      'You are a quantity surveyor in ' + CURRENCIES[cur].market + '. Give typical ' + level + ' unit rates in ' + cur + ' for this interior fit-out bill of quantities, a ' + styleById(state.resultStyle).name + ' ' + roomById(state.resultRoom).name.toLowerCase() + '.',
+      'Finishes (B codes) are supply and install per unit. Furniture (F codes) is the retail price per item. Paint lines are per litre of material plus labour.',
+      'Then suggest 3 value engineering ideas that keep the look but cost less, each with the code it affects and the approximate total saving in ' + cur + ' for the quantities given.',
+      'Lines: ' + JSON.stringify(lines.map(function (l) { return { code: l.code, item: l.item + (l.note ? ' (' + l.note + ')' : ''), unit: l.unit, qty: l.qty }; })),
+      'Reply with JSON only: {"rates":{"B01":0},"ve":[{"code":"B01","idea":"","saving":0}]}'
+    ].join('\n') }], 0.2);
+    boq.rates = {};
+    Object.keys(r.rates || {}).forEach(function (k) { var n = +r.rates[k]; if (n >= 0) boq.rates[k] = n; });
+    boq.ve = (r.ve || []).filter(function (v) { return v && v.idea; }).slice(0, 4);
+    boq.cur = cur;
+    boqRender();
+  } catch (e) {
+    $('boqError').textContent = friendlyError(e);
+    $('boqError').hidden = false;
+  } finally {
+    $('boqProgress').hidden = true;
+  }
+}
+function boqCsv() {
+  var cur = boq.cur || currency, priced = !!boq.rates;
+  var q = function (s) { s = String(s == null ? '' : s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  var rows = [['Makeoverly bill of quantities', styleById(state.resultStyle).name + ' ' + roomById(state.resultRoom).name.toLowerCase(), shortDate()], [],
+    ['Room width (m)', boq.dims.W], ['Room depth (m)', boq.dims.D], ['Room height (m)', boq.dims.H], [],
+    ['Code', 'Item', 'Note', 'Unit', 'Qty'].concat(priced ? ['Rate (' + cur + ')', 'Amount (' + cur + ')'] : [])];
+  boqLines(boq.dims).forEach(function (l) {
+    if (l.group) return rows.push([l.group]);
+    var rate = priced ? boq.rates[l.code] : null;
+    rows.push([l.code, l.item, [l.note, l.calc].filter(Boolean).join(' · '), l.unit, l.qty].concat(priced ? [rate != null ? rate : '', rate != null ? Math.round(rate * l.qty * 100) / 100 : ''] : []));
+  });
+  if (priced) rows.push([], ['', 'Estimated total, supply and install', '', '', '', '', Math.round(boq.total)]);
+  if (boq.ve && boq.ve.length) { rows.push([], ['Value engineering']); boq.ve.forEach(function (v) { rows.push([v.code || '', v.idea, '', '', '', 'Saving', v.saving || '']); }); }
+  rows.push([], ['Estimates from an AI design concept. Measure on site and get quotes before ordering.']);
+  // A BOM so Excel reads the m² and Arabic characters correctly
+  var blob = new Blob(['﻿' + rows.map(function (r) { return r.map(q).join(','); }).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'makeoverly-' + styleById(state.resultStyle).id + '-' + state.resultRoom + '-boq.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+}
+$('boqRail').addEventListener('click', async function () {
+  if (!state.result) return;
+  var dlg = $('boqDialog');
+  if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); } else { dlg.setAttribute('open', ''); }
+  $('boqError').hidden = true;
+  if (boq.forResult === state.result && boq.dims) { boqFill(); boqRender(); return; }
+  var forResult = state.result;
+  boq = { forResult: forResult, dims: null, source: '', rates: null, ve: null, cur: null };
+  $('boqTable').innerHTML = '';
+  $('boqVe').hidden = true;
+  if (room3d.forResult === state.result && room3d.spec) {
+    boq.dims = boqFromSpec(room3d.spec);
+    boq.source = '3d';
+  } else {
+    $('boqProgress').hidden = false;
+    $('boqProgressText').textContent = 'Measuring the room from the photo...';
+    try { boq.dims = await boqEstimate(); }
+    catch (e) { boq.dims = boqFromSpec({}); $('boqError').textContent = 'Could not measure the photo, so standard sizes are shown. Type your room sizes.'; $('boqError').hidden = false; }
+    finally { $('boqProgress').hidden = true; }
+    if (boq.forResult !== forResult) return;
+    boq.source = 'photo';
+  }
+  boqFill();
+  boqRender();
+});
+$('boqPrice').addEventListener('click', function () { if (boq.dims) boqPrice(); });
+$('boqCsv').addEventListener('click', function () { if (boq.dims) boqCsv(); });
 
 $('quizUse').addEventListener('click', function () {
   if (state.intensity === 'stage' && state.stageStyles.indexOf(quiz.result) >= 0) state.style = quiz.result;
