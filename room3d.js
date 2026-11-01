@@ -602,6 +602,19 @@ export async function buildRoom(container, rawSpec, opts = {}) {
     resetView() { home(); dirty = true; },
     // Slow turntable spin, for presenting the room
     setAutoRotate(on, speed = 1.5) { controls.autoRotate = !!on; controls.autoRotateSpeed = speed; dirty = true; },
+    // Draws the room from the home view turned by `turn` (0..1 of a full circle) and returns the canvas,
+    // so a caller can copy the frame in the same task (used to film the Reel). Call resetView() after.
+    orbitFrame(turn) {
+      home();
+      const offset = camera.position.clone().sub(controls.target);
+      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), turn * Math.PI * 2);
+      camera.position.copy(controls.target).add(offset);
+      camera.lookAt(controls.target);
+      updateWalls();
+      renderer.render(scene, camera);
+      dirty = true;
+      return renderer.domElement;
+    },
     // factor < 1 moves the camera toward the room, > 1 away from it
     zoom(factor) {
       const offset = camera.position.clone().sub(controls.target).multiplyScalar(factor);
