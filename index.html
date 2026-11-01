@@ -2366,6 +2366,11 @@ function designItem(img, suffix, favorite, source) {
     favorite: favorite, kind: favorite ? 'saved' : 'generated'
   };
 }
+// Gemini returns large PNGs; the online copy is a full-size JPEG, about five times smaller to upload on a slow connection
+async function uploadCopy(img) {
+  if (img.indexOf('data:image/png') !== 0) return img;
+  try { return await resizeImage(img, 4096, 0.92); } catch (e) { return img; }
+}
 async function recordDesign(source, img, suffix) {
   if (storageMode !== 'cloud') return;
   var item = designItem(img, suffix, false, source);
@@ -2373,7 +2378,7 @@ async function recordDesign(source, img, suffix) {
   try { item.thumb = await resizeImage(img, 720, 0.8); } catch (e) {}
   item.img = img;
   try {
-    source.recording = cloud.create(item, img);
+    source.recording = uploadCopy(img).then(function (copy) { return cloud.create(item, copy); });
     await source.recording;
   } catch (e) { source.designId = null; return; }
   if (!gallery.some(function (g) { return g.id === item.id; })) gallery.unshift(item);
@@ -2398,7 +2403,7 @@ async function saveToGallery(img, suffix, source) {
   item.img = img;
   gallery.unshift(item);
   try {
-    if (storageMode === 'cloud') await cloud.create(item, img);
+    if (storageMode === 'cloud') await cloud.create(item, await uploadCopy(img));
     else await designs.put(item);
   } catch (e) {
     gallery.shift();
