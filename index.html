@@ -3689,6 +3689,8 @@ $('voteCreate').addEventListener('click', async function () {
     b.disabled = false;
   }
 });
+// While the window is open, keep the vote counts in "Your votes" current
+setInterval(function () { if ($('voteDialog').open && !document.hidden) renderVoteList(); }, 10000);
 $('voteCopy').addEventListener('click', function () {
   var btn = this;
   navigator.clipboard.writeText($('voteLink').value).then(function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; }, 1500); })
