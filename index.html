@@ -665,7 +665,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
             <div class="tiles" id="rooms"></div>
           </fieldset>
           <fieldset class="field" id="styleField">
-            <legend class="label">Style</legend>
+            <legend class="label" id="styleLegend">Style</legend>
             <div class="styles" id="styles"></div>
           </fieldset>
           <fieldset class="field">
@@ -721,7 +721,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
             <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Generate my design</button>
           <div class="loading" id="loading" role="status" hidden>
             <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
-            <span>Designing... <span class="timer"></span></span>
+            <span><span id="loadingText">Designing...</span> <span class="timer"></span></span>
           </div>
           <p class="hint" id="hint">Upload a photo to start</p>
         </div>
@@ -986,7 +986,7 @@ var KEEP_ITEMS = ['Sofa', 'Rug', 'Bed', 'Dining table', 'Curtains', 'Plants', 'A
 var KEY = 'makeover-gallery';
 var KEY_STORE = 'makeover-gemini-key';
 var MODEL = 'gemini-2.5-flash-image';
-var state = { photo: '', room: 'living', style: '', intensity: 'full', budget: 'mid', mood: 'day', quality: 'fast', view: 'side', keep: [], result: '', notes: [], versions: [], vIndex: 0, resultStyle: '', saved: false };
+var state = { photo: '', room: 'living', style: '', intensity: 'full', budget: 'mid', mood: 'day', quality: 'fast', view: 'side', keep: [], stageStyles: [], result: '', notes: [], versions: [], vIndex: 0, resultStyle: '', saved: false };
 var $ = function (id) { return document.getElementById(id); };
 var styleById = function (id) { return STYLES.find(function (s) { return s.id === id; }); };
 var roomById = function (id) { return ROOMS.find(function (r) { return r.id === id; }); };
@@ -1026,7 +1026,7 @@ STYLES.forEach(function (s) {
   b.dataset.id = s.id;
   b.setAttribute('aria-pressed', 'false');
   b.innerHTML = '<img src="' + IMG(s.img) + '" alt="" loading="lazy"><span>' + s.name + '</span>';
-  b.addEventListener('click', function () { state.style = s.id; refresh(); });
+  b.addEventListener('click', function () { pickStyle(s.id); });
   $('styles').appendChild(b);
 });
 KEEP_ITEMS.forEach(function (k) {
@@ -1039,7 +1039,11 @@ KEEP_ITEMS.forEach(function (k) {
   $('keepChips').appendChild(b);
 });
 document.querySelectorAll('#intensity button').forEach(function (b) {
-  b.addEventListener('click', function () { state.intensity = b.dataset.v; refresh(); });
+  b.addEventListener('click', function () {
+    state.intensity = b.dataset.v;
+    if (b.dataset.v === 'stage' && !state.stageStyles.length && state.style) state.stageStyles = [state.style];
+    refresh();
+  });
 });
 document.querySelectorAll('#budget button').forEach(function (b) {
   b.addEventListener('click', function () { state.budget = b.dataset.v; refresh(); });
@@ -1170,8 +1174,8 @@ function costHtml(level) {
 }
 
 // Editing prompt: lock what stays first, then the change, then lighting, then one constraints line
-function buildPrompt() {
-  var s = styleById(state.style);
+function buildPrompt(styleId) {
+  var s = styleById(styleId || state.style);
   var room = roomById(state.room).name.toLowerCase();
   var keep = state.keep.map(function (k) { return k.toLowerCase(); });
   var extra = $('keep').value.trim();
@@ -1367,32 +1371,74 @@ function hasTokens() {
   return false;
 }
 
+// Virtual staging can draw one empty room in several styles in a single run
+var MAX_STAGE_STYLES = 5;
+function pickStyle(id) {
+  state.style = id;
+  if (state.intensity === 'stage') {
+    var i = state.stageStyles.indexOf(id);
+    if (i >= 0) state.stageStyles.splice(i, 1);
+    else if (state.stageStyles.length < MAX_STAGE_STYLES) state.stageStyles.push(id);
+    else { showError('You can stage up to ' + MAX_STAGE_STYLES + ' styles at once. Tap a selected style to remove it first.'); return; }
+    showError('');
+    state.style = state.stageStyles[state.stageStyles.length - 1] || '';
+  }
+  refresh();
+}
+
+function showFirstResult(v) {
+  state.versions = [v];
+  state.angles = [];
+  renderAngles();
+  state.resultRoom = state.room;
+  $('slider').value = 50;
+  showVersion(0);
+  if (!DESKTOP.matches) $('workspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 $('generate').addEventListener('click', async function () {
   if (!state.photo) { showError('Upload a photo of your room first.'); $('file').click(); return; }
-  if (!state.style) { showError('Pick a style first.'); $('styleField').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  var styles = state.intensity === 'stage' ? state.stageStyles.slice() : (state.style ? [state.style] : []);
+  if (!styles.length) { showError(state.intensity === 'stage' ? 'Pick at least one style to stage.' : 'Pick a style first.'); $('styleField').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
   showError('');
   if (!hasTokens()) return;
+  var need = styles.length * TOKENS_PER_IMAGE;
+  if (styles.length > 1 && !getKey() && me && me.tokens < need) {
+    showError('Staging ' + styles.length + ' styles uses ' + need + ' tokens and you have ' + me.tokens + '. Pick ' + Math.floor(me.tokens / TOKENS_PER_IMAGE) + ' or fewer, or add your own Gemini key in Settings.');
+    return;
+  }
   $('generate').hidden = true;
   $('loading').hidden = false;
+  $('loadingText').textContent = styles.length > 1 ? 'Staging ' + styles.length + ' styles...' : 'Designing...';
   setBusy(true);
+  var failed = [], done = 0, lastError = null;
   try {
     var hd = state.quality === 'hd';
     var photo = await resizeImage(state.photo, hd ? 2048 : 1536, 0.9);
-    var out = await callGemini(photo, buildPrompt(), hd ? '2K' : '1K');
-    state.result = out.img;
-    state.notes = out.notes;
-    state.cost = costLevel(out.notes, state.budget);
-    state.versions = [{ img: state.result, notes: state.notes, cost: state.cost, label: 'Original design' }];
-    state.vIndex = 0;
-    state.angles = [];
-    renderAngles();
-    state.resultStyle = state.style;
-    state.resultRoom = state.room;
-    state.saved = false;
-    $('slider').value = 50;
-    refresh();
-    recordDesign(state.versions[0], state.result, '');
-    if (!DESKTOP.matches) $('workspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var queue = styles.slice();
+    // Two at a time keeps Gemini from refusing a burst of five large requests
+    async function worker() {
+      while (queue.length) {
+        var id = queue.shift();
+        try {
+          var out = await callGemini(photo, buildPrompt(id), hd ? '2K' : '1K');
+          var v = { img: out.img, notes: out.notes, cost: costLevel(out.notes, state.budget), style: id,
+            label: styles.length > 1 ? styleById(id).name : 'Original design' };
+          if (!done) showFirstResult(v);
+          else { state.versions.push(v); refresh(); }
+          done++;
+          if (styles.length > 1) $('loadingText').textContent = done + ' of ' + styles.length + ' styles ready...';
+          recordDesign(v, v.img, styles.length > 1 ? ' · staged' : '');
+        } catch (e) {
+          lastError = e;
+          failed.push(styleById(id).name);
+          if (e.needTokens) queue.length = 0;
+        }
+      }
+    }
+    await Promise.all([worker(), worker()]);
+    if (!done && lastError) throw lastError;
+    if (failed.length) showError('These styles did not finish: ' + failed.join(', ') + '. ' + friendlyError(lastError) + ' Pick just those styles and press the button again.');
   } catch (e) {
     if (e.needTokens) { openTokens(); return; }
     showError(friendlyError(e));
@@ -1436,8 +1482,9 @@ async function applyRefine() {
     var out = await callGemini(current, buildRefinePrompt(change), hd ? '2K' : '1K');
     var notes = state.notes.filter(function (n) { return n.label !== 'Cost level'; })
       .concat(out.notes.filter(function (n) { return n.label === 'Cost level'; }));
-    var v = { img: out.img, notes: notes, cost: costLevel(out.notes, state.budget), label: change.length > 28 ? change.slice(0, 26) + '…' : change };
-    state.versions = state.versions.slice(0, state.vIndex + 1).concat([v]);
+    var v = { img: out.img, notes: notes, cost: costLevel(out.notes, state.budget), style: state.resultStyle, label: change.length > 28 ? change.slice(0, 26) + '…' : change };
+    // Later edits of this style are replaced; other staged styles stay in the strip
+    state.versions = state.versions.filter(function (x, i) { return i <= state.vIndex || x.style !== v.style; }).concat([v]);
     showVersion(state.versions.length - 1);
     $('refineText').value = '';
     recordDesign(v, v.img, ' · ' + v.label);
@@ -1458,6 +1505,7 @@ function showVersion(i) {
   state.result = v.img;
   state.notes = v.notes;
   state.cost = v.cost;
+  state.resultStyle = v.style || state.resultStyle;
   state.saved = !!v.favorite;
   refresh();
 }
@@ -2308,18 +2356,19 @@ async function loadGallery() {
 
 // Every finished design (main result, refinement or angle) is kept in the design history online;
 // the heart marks favorites. `source` is the version or angle object, so it remembers its design id.
-function designItem(img, suffix, favorite) {
-  var s = styleById(state.resultStyle);
+function designItem(img, suffix, favorite, source) {
+  var styleId = (source && source.style) || state.resultStyle;
+  var s = styleById(styleId);
   var r = roomById(state.resultRoom);
   return {
-    id: newDesignId(), style: state.resultStyle, room: state.resultRoom, cost: state.cost,
+    id: newDesignId(), style: styleId, room: state.resultRoom, cost: source && source.cost || state.cost,
     name: s.name + ' ' + r.name.toLowerCase() + (suffix || ''), note: '', date: shortDate(),
     favorite: favorite, kind: favorite ? 'saved' : 'generated'
   };
 }
 async function recordDesign(source, img, suffix) {
   if (storageMode !== 'cloud') return;
-  var item = designItem(img, suffix, false);
+  var item = designItem(img, suffix, false, source);
   source.designId = item.id;
   try { item.thumb = await resizeImage(img, 720, 0.8); } catch (e) {}
   item.img = img;
@@ -2658,6 +2707,10 @@ function refresh() {
   var staging = state.intensity === 'stage';
   $('stageHint').hidden = !staging;
   $('keepField').hidden = staging;
+  if (staging) pressAll('#styles .style', function (b) { return state.stageStyles.indexOf(b.dataset.id) >= 0; });
+  $('styleLegend').innerHTML = staging
+    ? 'Styles <small>pick up to ' + MAX_STAGE_STYLES + ', ' + (getKey() ? 'all made at once' : TOKENS_PER_IMAGE + ' tokens each') + '</small>'
+    : 'Style';
   pressAll('#budget button', function (b) { return b.dataset.v === state.budget; });
   pressAll('#mood button', function (b) { return b.dataset.v === state.mood; });
   pressAll('#quality button', function (b) { return b.dataset.v === state.quality; });
