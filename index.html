@@ -1459,6 +1459,10 @@ function costHtml(level) {
   return '<span class="cost" title="' + COST_WORDS[level] + '"><span class="sr">' + COST_WORDS[level] + ': </span>' + s + '</span>';
 }
 
+// In Arabic mode, text the AI writes for people to read comes back in Arabic; labels, codes and search terms stay English
+function uiArabic() { return typeof makeoverLang === 'function' && makeoverLang() === 'ar'; }
+var NOTES_ARABIC = 'Write the note values in Arabic, but keep each label (Concept, Palette, Materials, Statement piece, Lighting, Budget tip, Cost level) in English exactly as shown, and keep the cost level as $ signs.';
+
 // Editing prompt: lock what stays first, then the change, then lighting, then one constraints line
 function buildPrompt(styleId) {
   var s = styleById(styleId || state.style);
@@ -1494,6 +1498,7 @@ function buildPrompt(styleId) {
   lines.push('PHOTOGRAPHY: ' + MOODS[state.mood] + '.');
   lines.push('OUTPUT: one photorealistic editorial interior photograph in the style of a high-end design magazine, same camera position, lens and framing as the input, vertical lines kept straight as with a tilt-shift lens, crisp focus across the room, subtle ambient occlusion in corners, physically accurate materials with visible wood grain, fabric weave and stone veining, natural reflections on glass and metal, no CGI or plastic look, same aspect ratio as the input photo.');
   lines.push('Also reply with a short designer note in exactly this format:\nConcept: <one line>\nPalette: <3 to 5 colors>\nMaterials: <key materials>\nStatement piece: <one item>\nLighting: <one line>\nBudget tip: <one practical way this design fits the budget>\nCost level: <exactly one of $, $$, $$$, $$$$, $$$$$ for the relative cost to furnish and finish the room as shown, where $ is very low cost and $$$$$ is high-end luxury>');
+  if (uiArabic()) lines.push(NOTES_ARABIC);
   lines.push('No people, no text inside the image, no watermarks, no extra or moved windows and doors.');
   return lines.join('\n');
 }
@@ -1517,6 +1522,7 @@ function buildStagingPrompt(s, room) {
   lines.push('PHOTOGRAPHY: ' + MOODS[state.mood] + '.');
   lines.push('OUTPUT: one photorealistic real-estate interior photograph, same camera position, lens and framing as the input, vertical lines kept straight, lighting on the new furniture matching the light already in the photo, physically accurate materials, no CGI or plastic look, same aspect ratio as the input photo.');
   lines.push('Also reply with a short designer note in exactly this format:\nConcept: <one line>\nPalette: <3 to 5 colors>\nMaterials: <key materials>\nStatement piece: <one item>\nLighting: <one line>\nBudget tip: <one practical way this staging fits the budget>\nCost level: <exactly one of $, $$, $$$, $$$$, $$$$$ for the relative cost to furnish the room as shown, where $ is very low cost and $$$$$ is high-end luxury>');
+  if (uiArabic()) lines.push(NOTES_ARABIC);
   lines.push('No people, no text inside the image, no watermarks, no extra or moved windows and doors.');
   return lines.join('\n');
 }
@@ -2137,10 +2143,11 @@ async function findPieces() {
       'You are an interior sourcing specialist in ' + CURRENCIES[cur].market + '. This image is a redesigned ' + roomById(state.resultRoom).name.toLowerCase() + ' in ' + styleById(state.resultStyle).name + ' style, at a ' + level + ' budget.',
       'List the 6 to 10 main pieces a client would buy to recreate it: furniture, rug, lighting, curtains and key decor. Do not list walls, floors or built-in finishes.',
       'For each piece give: name (short and specific, like "Cream boucle 3-seat sofa"), material, color, qty, price_min and price_max in ' + cur + ' as typical retail prices in stores in ' + CURRENCIES[cur].market + ' for this budget level, and search (a 2 to 5 word English search query to find it online).',
+      uiArabic() ? 'Write name, material and color in Arabic; keep search in English so stores can find it.' : '',
       'Reply with JSON only: {"items": [{"name": "", "material": "", "color": "", "qty": 1, "price_min": 0, "price_max": 0, "search": ""}]}'
     ].join('\n') }], 0.3);
     if (shop.forResult !== null && forResult !== state.result) return;
-    shop = { forResult: forResult, items: (out.items || []).slice(0, 12), currency: cur };
+    shop = { forResult: forResult, items: (out.items || []).slice(0, 12), currency: cur, lang: makeoverLang() };
     renderShop();
   } catch (e) {
     $('shopError').textContent = friendlyError(e);
@@ -2153,7 +2160,7 @@ async function findPieces() {
 $('shopBtn').addEventListener('click', findPieces);
 $('shopRail').addEventListener('click', function () {
   $('shopBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  if (!(shop.items && shop.forResult === state.result)) findPieces();
+  if (!(shop.items && shop.forResult === state.result && shop.lang === makeoverLang())) findPieces();
 });
 
 // ---------- Noor, the AI designer ----------
@@ -2720,8 +2727,13 @@ function reelCover(g, img, pan, zoom) {
   var w = iw * s, h = ih * s;
   g.drawImage(img, -(w - REEL_W) * pan, (REEL_H - h) / 2, w, h);
 }
+// Words on the video follow the page language (the same translations as the interface)
+function reelSay(text) { return uiArabic() && typeof makeoverTranslate === 'function' ? (makeoverTranslate(text) || text) : text; }
 function reelPill(g, text, y, dark) {
-  g.font = '600 46px "DM Sans", sans-serif';
+  var F = boardFonts();
+  text = reelSay(text);
+  g.font = '600 46px ' + F.body;
+  g.direction = F.rtl ? 'rtl' : 'ltr';
   var w = g.measureText(text).width + 64;
   g.fillStyle = dark ? 'rgba(36,33,29,.82)' : 'rgba(255,255,255,.92)';
   g.beginPath();
@@ -2731,6 +2743,7 @@ function reelPill(g, text, y, dark) {
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.fillText(text, REEL_W / 2, y + 46);
+  g.direction = 'ltr';
 }
 function reelBrand(g) {
   var top = g.createLinearGradient(0, 0, 0, 320);
@@ -2808,7 +2821,7 @@ async function reelScenes() {
     if (mark) g.drawImage(mark, REEL_W / 2 - 70, 1200, 140, 140);
     g.fillStyle = '#24211D'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.font = '120px "Instrument Serif", serif'; g.fillText('Makeoverly', REEL_W / 2, 1440);
-    g.font = '500 46px "DM Sans", sans-serif'; g.fillStyle = '#5E5850'; g.fillText('Redesign your room in 20 seconds', REEL_W / 2, 1540);
+    g.font = '500 46px ' + boardFonts().body; g.fillStyle = '#5E5850'; g.direction = boardFonts().rtl ? 'rtl' : 'ltr'; g.fillText(reelSay('Redesign your room in 20 seconds'), REEL_W / 2, 1540); g.direction = 'ltr';
     g.font = '600 40px "DM Sans", sans-serif'; g.fillStyle = '#7A1E2C'; g.fillText(LIVE_SITE.replace(/^https:\/\//, '').replace(/\/$/, ''), REEL_W / 2, 1630);
     g.globalAlpha = 1;
   } });
@@ -2839,7 +2852,8 @@ async function makeReel() {
   $('reelProgressText').textContent = 'Preparing...';
   var g = $('reelCanvas').getContext('2d');
   try {
-    if (document.fonts) await Promise.all([document.fonts.load('120px "Instrument Serif"'), document.fonts.load('600 46px "DM Sans"')]).catch(function () {});
+    if (document.fonts) await Promise.all([document.fonts.load('120px "Instrument Serif"'), document.fonts.load('600 46px "DM Sans"'),
+      document.fonts.load('600 46px "Tajawal"', 'عربي'), document.fonts.load('500 46px "Tajawal"', 'عربي')]).catch(function () {});
     var scenes = await reelScenes();
     var total = scenes.reduce(function (s, x) { return s + x.d; }, 0);
     var stream = $('reelCanvas').captureStream(REEL_FPS);
@@ -3074,7 +3088,9 @@ async function readBoard() {
     '- pieces: the 5 to 8 main furniture and decor pieces, each {name, material, color, qty, box}.',
     '- lighting: 2 to 4 lighting elements, each {type (ambient, task or accent), fixture, color_temp}, using a Kelvin value like "2700K".',
     'box is [x, y, w, h] as fractions 0 to 1 of the image width and height: a tight rectangle that shows mostly that material or piece and at least 6% of the image width. For materials, choose a flat area showing only that material.',
-    'Use plain English names a contractor would understand. Reply with JSON only:',
+    uiArabic()
+      ? 'Write concept, every name, finish, where, use, material, color, type and fixture in clear Arabic a contractor in the Gulf would understand; keep hex codes, Kelvin values and boxes as they are. Reply with JSON only:'
+      : 'Use plain English names a contractor would understand. Reply with JSON only:',
     '{"concept":"","palette":[{"name":"","hex":"#000000","use":""}],"materials":[{"name":"","finish":"","where":"","box":[0,0,0,0]}],"pieces":[{"name":"","material":"","color":"","qty":1,"box":[0,0,0,0]}],"lighting":[{"type":"","fixture":"","color_temp":""}]}'
   ].join('\n') }], 0.2);
 }
@@ -3092,109 +3108,173 @@ function boardCrop(g, img, box, x, y, size) {
   g.restore();
   return true;
 }
+// Board text in either language: Arabic is drawn right to left, right-aligned in its box, in Arabic fonts
+function boardFonts() {
+  return uiArabic()
+    ? { body: '"Tajawal", "DM Sans", sans-serif', head: '"Noto Kufi Arabic", "Tajawal", serif', rtl: true }
+    : { body: '"DM Sans", sans-serif', head: '"Instrument Serif", serif', rtl: false };
+}
 function boardText(g, text, x, y, maxW, font, color, lineH, maxLines) {
-  g.font = font; g.fillStyle = color; g.textAlign = 'left'; g.textBaseline = 'top';
+  var rtl = boardFonts().rtl;
+  g.font = font; g.fillStyle = color; g.textBaseline = 'top';
+  g.direction = rtl && /[؀-ۿ]/.test(String(text || '')) ? 'rtl' : 'ltr';
+  g.textAlign = rtl ? 'right' : 'left';
+  var ax = rtl ? x + maxW : x;
   var words = String(text || '').split(/\s+/), line = '', lines = 0;
   for (var i = 0; i < words.length; i++) {
     var test = line ? line + ' ' + words[i] : words[i];
     if (g.measureText(test).width > maxW && line) {
-      if (++lines >= (maxLines || 99)) { g.fillText(line.replace(/\W*$/, '') + '…', x, y); return y + lineH; }
-      g.fillText(line, x, y); y += lineH; line = words[i];
+      // Trim trailing punctuation only (\W would also strip Arabic letters)
+      if (++lines >= (maxLines || 99)) { g.fillText(line.replace(/[\s.,،؛;:!?·-]*$/, '') + '…', ax, y); return y + lineH; }
+      g.fillText(line, ax, y); y += lineH; line = words[i];
     } else line = test;
   }
-  if (line) { g.fillText(line, x, y); y += lineH; }
+  if (line) { g.fillText(line, ax, y); y += lineH; }
+  g.direction = 'ltr'; g.textAlign = 'left';
   return y;
 }
 function boardHex(h) { return /^#[0-9a-f]{6}$/i.test(String(h || '').trim()) ? String(h).trim().toUpperCase() : '#CCCCCC'; }
+function boardDate() {
+  return uiArabic() ? new Date().toLocaleDateString('ar-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }) : shortDate();
+}
+var BOARD_WORDS = {
+  en: { kicker: 'MOOD & MATERIAL BOARD', pieces: 'KEY PIECES', palette: 'PALETTE', materials: 'MATERIALS & FINISHES', lighting: 'LIGHTING', footer: 'AI concept: confirm materials, colours and sizes on site before ordering' },
+  ar: { kicker: 'مود بورد وجدول المواد', pieces: 'القطع الأساسية', palette: 'الألوان', materials: 'المواد والتشطيبات', lighting: 'الإضاءة', footer: 'تصميم بالذكاء الاصطناعي: تأكد من المواد والألوان والقياسات بالموقع قبل الطلب' }
+};
+// The board title, "Japandi living room" or "غرفة الجلوس · جاباندي"
+function boardTitle() {
+  var style = styleById(state.resultStyle).name, room = roomById(state.resultRoom).name;
+  if (uiArabic() && typeof makeoverTranslate === 'function') return (makeoverTranslate(room) || room) + ' · ' + (makeoverTranslate(style) || style);
+  return style + ' ' + room.toLowerCase();
+}
 async function drawBoard(d) {
   var g = $('boardCanvas').getContext('2d');
   var img = await reelImage(state.result);
-  var style = styleById(state.resultStyle).name, room = roomById(state.resultRoom).name;
+  var F = boardFonts(), W = BOARD_WORDS[F.rtl ? 'ar' : 'en'];
   var M = 90, ink = '#24211D', muted = '#6B645B';
   g.fillStyle = '#F6F0E8'; g.fillRect(0, 0, BOARD_W, BOARD_H);
   // Title
-  g.font = '700 28px "DM Sans", sans-serif'; g.fillStyle = '#7A1E2C'; g.textBaseline = 'top'; g.textAlign = 'left';
-  g.fillText('MOOD & MATERIAL BOARD', M, M);
-  g.font = '96px "Instrument Serif", serif'; g.fillStyle = ink; g.fillText(style + ' ' + room.toLowerCase(), M, M + 44);
-  boardText(g, d.concept, M, M + 160, 1300, '400 32px "DM Sans", sans-serif', muted, 42, 2);
+  var iw = 1300;
+  boardText(g, W.kicker, M, M, iw, '700 28px ' + F.body, '#7A1E2C', 34, 1);
+  boardText(g, boardTitle(), M, M + 38, iw, (F.rtl ? '600 70px ' : '96px ') + F.head, ink, 110, 1);
+  boardText(g, d.concept, M, M + 160, iw, '400 32px ' + F.body, muted, 42, 2);
   // The design
-  var top = 350, iw = 1300, ih = Math.round(iw * img.height / img.width);
+  var top = 350, ih = Math.round(iw * img.height / img.width);
   if (ih > 820) { ih = 820; }
   g.save(); g.beginPath(); g.roundRect(M, top, iw, ih, 26); g.clip(); reelCover2(g, img, M, top, iw, ih); g.restore();
   // Pieces under the design
   var py = top + ih + 40, ps = 200, pieces = (d.pieces || []).slice(0, 6), px = M;
-  g.font = '700 26px "DM Sans", sans-serif'; g.fillStyle = ink; g.fillText('KEY PIECES', M, py); py += 44;
+  boardText(g, W.pieces, M, py, iw, '700 26px ' + F.body, ink, 30, 1); py += 44;
   pieces.forEach(function (p, i) {
     if (px + ps > M + iw) return;
     if (!boardCrop(g, img, p.box, px, py, ps)) { g.fillStyle = '#E7DED2'; g.beginPath(); g.roundRect(px, py, ps, ps, 22); g.fill(); }
-    boardText(g, 'F' + String(i + 1).padStart(2, '0') + '  ' + p.name, px, py + ps + 10, ps, '600 21px "DM Sans", sans-serif', ink, 26, 2);
+    boardText(g, 'F' + String(i + 1).padStart(2, '0') + '  ' + p.name, px, py + ps + 10, ps, '600 21px ' + F.body, ink, 26, 2);
     px += ps + 20;
   });
-  // Right column: palette, materials, lighting
+  // Side column: palette, materials, lighting
   var rx = M + iw + 80, rw = BOARD_W - M - rx, y = top;
-  g.font = '700 26px "DM Sans", sans-serif'; g.fillStyle = ink; g.fillText('PALETTE', rx, y); y += 44;
+  boardText(g, W.palette, rx, y, rw, '700 26px ' + F.body, ink, 30, 1); y += 44;
   var pal = (d.palette || []).slice(0, 5), sw = (rw - 4 * 14) / 5;
   pal.forEach(function (c, i) {
     var sx = rx + i * (sw + 14);
     g.fillStyle = boardHex(c.hex); g.beginPath(); g.roundRect(sx, y, sw, 170, 18); g.fill();
     g.strokeStyle = 'rgba(36,33,29,.12)'; g.lineWidth = 2; g.stroke();
-    boardText(g, c.name, sx, y + 182, sw, '600 21px "DM Sans", sans-serif', ink, 25, 2);
-    boardText(g, boardHex(c.hex), sx, y + 234, sw, '400 19px "DM Sans", sans-serif', muted, 24, 1);
+    boardText(g, c.name, sx, y + 182, sw, '600 21px ' + F.body, ink, 25, 2);
+    boardText(g, boardHex(c.hex), sx, y + 234, sw, '400 19px ' + F.body, muted, 24, 1);
   });
   y += 300;
-  g.font = '700 26px "DM Sans", sans-serif'; g.fillStyle = ink; g.fillText('MATERIALS & FINISHES', rx, y); y += 44;
+  boardText(g, W.materials, rx, y, rw, '700 26px ' + F.body, ink, 30, 1); y += 44;
   var mats = (d.materials || []).slice(0, 6), ms = (rw - 2 * 24) / 3;
   mats.forEach(function (m, i) {
     var mx = rx + (i % 3) * (ms + 24), my = y + Math.floor(i / 3) * (ms + 96);
     if (!boardCrop(g, img, m.box, mx, my, ms)) { g.fillStyle = '#E7DED2'; g.beginPath(); g.roundRect(mx, my, ms, ms, 22); g.fill(); }
-    var ny = boardText(g, 'M' + String(i + 1).padStart(2, '0') + '  ' + m.name, mx, my + ms + 10, ms, '600 21px "DM Sans", sans-serif', ink, 25, 2);
-    boardText(g, m.finish, mx, ny + 2, ms, '400 19px "DM Sans", sans-serif', muted, 23, 1);
+    var ny = boardText(g, 'M' + String(i + 1).padStart(2, '0') + '  ' + m.name, mx, my + ms + 10, ms, '600 21px ' + F.body, ink, 25, 2);
+    boardText(g, m.finish, mx, ny + 2, ms, '400 19px ' + F.body, muted, 23, 1);
   });
   y += 2 * (ms + 96) + 10;
   if (y < BOARD_H - 220) {
-    g.font = '700 26px "DM Sans", sans-serif'; g.fillStyle = ink; g.fillText('LIGHTING', rx, y); y += 40;
+    boardText(g, W.lighting, rx, y, rw, '700 26px ' + F.body, ink, 30, 1); y += 40;
     (d.lighting || []).slice(0, 3).forEach(function (l, i) {
       if (y > BOARD_H - 150) return;
-      y = boardText(g, 'L' + String(i + 1).padStart(2, '0') + '  ' + [l.fixture, l.color_temp].filter(Boolean).join(' · '), rx, y, rw, '400 22px "DM Sans", sans-serif', ink, 30, 1);
+      y = boardText(g, 'L' + String(i + 1).padStart(2, '0') + '  ' + [l.fixture, l.color_temp].filter(Boolean).join(' · '), rx, y, rw, '400 22px ' + F.body, ink, 30, 1);
     });
   }
-  // Footer
+  // Footer: the brand on one side, the date and the site note on the other
   g.fillStyle = 'rgba(36,33,29,.12)'; g.fillRect(M, BOARD_H - 92, BOARD_W - 2 * M, 2);
-  g.font = '34px "Instrument Serif", serif'; g.fillStyle = ink; g.textBaseline = 'middle'; g.fillText('Makeoverly', M, BOARD_H - 52);
-  g.font = '400 20px "DM Sans", sans-serif'; g.fillStyle = muted; g.textAlign = 'right';
-  g.fillText(shortDate() + ' · AI concept: confirm materials, colours and sizes on site before ordering', BOARD_W - M, BOARD_H - 52);
-  g.textAlign = 'left';
+  g.textBaseline = 'middle'; g.direction = 'ltr';
+  g.font = '34px "Instrument Serif", serif'; g.fillStyle = ink;
+  g.textAlign = F.rtl ? 'right' : 'left'; g.fillText('Makeoverly', F.rtl ? BOARD_W - M : M, BOARD_H - 52);
+  g.font = '400 20px ' + F.body; g.fillStyle = muted;
+  g.direction = F.rtl ? 'rtl' : 'ltr'; g.textAlign = F.rtl ? 'left' : 'right';
+  g.fillText(boardDate() + ' · ' + W.footer, F.rtl ? M : BOARD_W - M, BOARD_H - 52);
+  g.direction = 'ltr'; g.textAlign = 'left';
 }
+// Amiri (an open Arabic font) is embedded only for an Arabic PDF; jsPDF shapes the letters itself
+var amiriFonts = null;
+function loadAmiri() {
+  var base = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/amiri/';
+  var b64 = function (name) {
+    return fetch(base + name).then(function (r) { if (!r.ok) throw new Error('Could not load the Arabic font for the PDF.'); return r.arrayBuffer(); }).then(function (buf) {
+      var bin = '', u = new Uint8Array(buf);
+      for (var i = 0; i < u.length; i += 8192) bin += String.fromCharCode.apply(null, u.subarray(i, i + 8192));
+      return btoa(bin);
+    });
+  };
+  if (!amiriFonts) amiriFonts = Promise.all([b64('Amiri-Regular.ttf'), b64('Amiri-Bold.ttf')]).catch(function (e) { amiriFonts = null; throw e; });
+  return amiriFonts;
+}
+var PDF_WORDS = {
+  en: { title: 'Material & finishes schedule', sub: 'codes match the board on page 1', mats: 'Materials & finishes', matCols: ['Code', 'Material', 'Finish', 'Where'],
+    pal: 'Colour palette', palCols: ['Code', 'Swatch', 'Name', 'HEX', 'Use'], ffe: 'Furniture & decor (FF&E)', ffeCols: ['Code', 'Item', 'Material', 'Colour', 'Qty'], each: 'Est. price each',
+    light: 'Lighting', lightCols: ['Code', 'Type', 'Fixture', 'Colour temperature'], doc: 'Mood & material board',
+    note: 'Generated by Makeoverly from an AI design concept. Confirm all materials, colours, sizes and quantities on site before ordering.', prices: function (m) { return ' Prices are estimates for typical stores in ' + m + '.'; } },
+  ar: { title: 'جدول المواد والتشطيبات', sub: 'الرموز نفسها اللي بالمود بورد بالصفحة الأولى', mats: 'المواد والتشطيبات', matCols: ['الرمز', 'المادة', 'التشطيب', 'المكان'],
+    pal: 'الألوان', palCols: ['الرمز', 'اللون', 'الاسم', 'HEX', 'الاستعمال'], ffe: 'الفرش والديكور', ffeCols: ['الرمز', 'القطعة', 'المادة', 'اللون', 'الكمية'], each: 'السعر التقريبي للقطعة',
+    light: 'الإضاءة', lightCols: ['الرمز', 'النوع', 'الوحدة', 'حرارة اللون'], doc: 'مود بورد وجدول المواد',
+    note: 'من Makeoverly، مبني على تصميم بالذكاء الاصطناعي. تأكد من كل المواد والألوان والقياسات والكميات بالموقع قبل الطلب.', prices: function (m) { return ' الأسعار تقديرية لمحلات ' + m + '.'; } }
+};
 async function boardPdf(d) {
   await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
   await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+  var AR = uiArabic(), L = PDF_WORDS[AR ? 'ar' : 'en'];
   var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  var style = styleById(state.resultStyle).name, room = roomById(state.resultRoom).name;
-  doc.setProperties({ title: style + ' ' + room.toLowerCase() + ' · Mood & material board', creator: 'Makeoverly' });
+  var font = 'helvetica';
+  if (AR) {
+    var f = await loadAmiri();
+    doc.addFileToVFS('Amiri-Regular.ttf', f[0]); doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+    doc.addFileToVFS('Amiri-Bold.ttf', f[1]); doc.addFont('Amiri-Bold.ttf', 'Amiri', 'bold');
+    font = 'Amiri';
+  }
+  // Arabic reads from the right: headings sit on the right and table columns run right to left
+  var X = AR ? 283 : 14, align = AR ? 'right' : 'left';
+  var order = function (a) { return AR ? a.slice().reverse() : a; };
+  var title = boardTitle();
+  doc.setProperties({ title: title + ' · ' + L.doc, creator: 'Makeoverly' });
   doc.addImage($('boardCanvas').toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 297, 210);
   doc.addPage();
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(36, 33, 29);
-  doc.text('Material & finishes schedule', 14, 16);
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(107, 100, 91);
-  doc.text(style + ' ' + room.toLowerCase() + ' · ' + shortDate() + ' · codes match the board on page 1', 14, 22);
-  var head = { fillColor: [122, 30, 44], textColor: 255, fontStyle: 'bold' };
-  var opts = function (startY) { return { startY: startY, headStyles: head, styles: { fontSize: 9, cellPadding: 2 }, margin: { left: 14, right: 14 } }; };
+  doc.setFont(font, 'bold'); doc.setFontSize(18); doc.setTextColor(36, 33, 29);
+  doc.text(L.title, X, 16, { align: align });
+  doc.setFont(font, 'normal'); doc.setFontSize(10); doc.setTextColor(107, 100, 91);
+  doc.text(title + ' · ' + boardDate() + ' · ' + L.sub, X, 22, { align: align });
+  var head = { fillColor: [122, 30, 44], textColor: 255, fontStyle: 'bold', font: font, halign: align };
+  var opts = function (startY) { return { startY: startY, headStyles: head, styles: { fontSize: 9, cellPadding: 2, font: font, halign: align }, margin: { left: 14, right: 14 } }; };
   var y = 28;
-  function table(title, columns, rows, extra) {
+  function table(name, columns, rows, extra) {
     if (!rows.length) return;
     if (y > 175) { doc.addPage(); y = 16; }
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(36, 33, 29); doc.text(title, 14, y + 4);
-    doc.autoTable(Object.assign(opts(y + 7), { head: [columns], body: rows }, extra || {}));
+    doc.setFont(font, 'bold'); doc.setFontSize(12); doc.setTextColor(36, 33, 29); doc.text(name, X, y + 4, { align: align });
+    doc.autoTable(Object.assign(opts(y + 7), { head: [order(columns)], body: rows.map(order) }, extra || {}));
     y = doc.lastAutoTable.finalY + 8;
   }
-  table('Materials & finishes', ['Code', 'Material', 'Finish', 'Where'], (d.materials || []).map(function (m, i) {
+  table(L.mats, L.matCols, (d.materials || []).map(function (m, i) {
     return ['M' + String(i + 1).padStart(2, '0'), m.name || '', m.finish || '', m.where || ''];
   }));
-  var pal = d.palette || [];
-  table('Colour palette', ['Code', 'Swatch', 'Name', 'HEX', 'Use'], pal.map(function (c, i) {
+  var pal = d.palette || [], swatch = AR ? 3 : 1, swatchCols = {};
+  swatchCols[swatch] = { cellWidth: 16 };
+  table(L.pal, L.palCols, pal.map(function (c, i) {
     return ['C' + String(i + 1).padStart(2, '0'), '', c.name || '', boardHex(c.hex), c.use || ''];
-  }), { columnStyles: { 1: { cellWidth: 16 } }, didDrawCell: function (h) {
-    if (h.section !== 'body' || h.column.index !== 1) return;
+  }), { columnStyles: swatchCols, didDrawCell: function (h) {
+    if (h.section !== 'body' || h.column.index !== swatch) return;
     var hex = boardHex(pal[h.row.index].hex);
     doc.setFillColor(parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16));
     doc.setDrawColor(200);
@@ -3204,17 +3284,22 @@ async function boardPdf(d) {
   var priced = shop.forResult === state.result && shop.items && shop.items.length;
   var items = priced ? shop.items : (d.pieces || []);
   var cur = priced ? shop.currency : '';
-  table('Furniture & decor (FF&E)', ['Code', 'Item', 'Material', 'Colour', 'Qty'].concat(priced ? ['Est. price each (' + cur + ')'] : []), items.map(function (p, i) {
+  table(L.ffe, L.ffeCols.concat(priced ? [L.each + ' (' + cur + ')'] : []), items.map(function (p, i) {
     var row = ['F' + String(i + 1).padStart(2, '0'), p.name || '', p.material || '', p.color || '', String(p.qty || 1)];
     if (priced) row.push(Math.round(p.price_min || 0).toLocaleString('en') + ' – ' + Math.round(p.price_max || 0).toLocaleString('en'));
     return row;
   }));
-  table('Lighting', ['Code', 'Type', 'Fixture', 'Colour temperature'], (d.lighting || []).map(function (l, i) {
+  table(L.light, L.lightCols, (d.lighting || []).map(function (l, i) {
     return ['L' + String(i + 1).padStart(2, '0'), l.type || '', l.fixture || '', l.color_temp || ''];
   }));
   if (y > 190) { doc.addPage(); y = 16; }
-  doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(107, 100, 91);
-  doc.text('Generated by Makeoverly from an AI design concept. Confirm all materials, colours, sizes and quantities on site before ordering.' + (priced ? ' Prices are estimates for typical stores in ' + CURRENCIES[cur].market + '.' : ''), 14, y, { maxWidth: 269 });
+  doc.setFont(font, AR ? 'normal' : 'italic'); doc.setFontSize(8.5); doc.setTextColor(107, 100, 91);
+  var market = priced ? CURRENCIES[cur].market : '';
+  if (AR && market && typeof makeoverTranslate === 'function') {
+    var said = makeoverTranslate('Pricing for ' + market + '...');
+    if (said) market = said.replace(/^عم نسعّر لسوق /, '').replace(/\.\.\.$/, '');
+  }
+  doc.text(L.note + (priced ? L.prices(market) : ''), X, y, { maxWidth: 269, align: align });
   return doc;
 }
 function boardState(phase) {
@@ -3228,13 +3313,15 @@ async function makeBoard() {
   $('boardError').hidden = true;
   boardState('busy');
   try {
-    if (board.forResult !== state.result) {
+    if (board.forResult !== state.result || board.lang !== makeoverLang()) {
       $('boardProgressText').textContent = 'Reading colours, materials and pieces from the design...';
       var d = await readBoard();
-      board = { forResult: state.result, data: d };
+      board = { forResult: state.result, data: d, lang: makeoverLang() };
     }
     $('boardProgressText').textContent = 'Laying out the board...';
-    if (document.fonts) await Promise.all([document.fonts.load('96px "Instrument Serif"'), document.fonts.load('600 21px "DM Sans"'), document.fonts.load('700 26px "DM Sans"')]).catch(function () {});
+    // Arabic fonts come in subsets, so they are asked for with Arabic text to load the Arabic part
+    if (document.fonts) await Promise.all([document.fonts.load('96px "Instrument Serif"'), document.fonts.load('600 21px "DM Sans"'), document.fonts.load('700 26px "DM Sans"'),
+      document.fonts.load('600 21px "Tajawal"', 'عربي'), document.fonts.load('700 26px "Tajawal"', 'عربي'), document.fonts.load('600 70px "Noto Kufi Arabic"', 'عربي')]).catch(function () {});
     await drawBoard(board.data);
     $('boardPng').href = $('boardCanvas').toDataURL('image/jpeg', 0.92);
     $('boardPng').download = boardFileName('jpg');
@@ -3247,7 +3334,7 @@ async function makeBoard() {
 }
 $('boardRail').addEventListener('click', function () {
   if (!state.result) return;
-  var ready = board.forResult === state.result;
+  var ready = board.forResult === state.result && board.lang === makeoverLang();
   $('boardError').hidden = true;
   var g = $('boardCanvas').getContext('2d');
   g.fillStyle = '#F6F0E8'; g.fillRect(0, 0, BOARD_W, BOARD_H);
@@ -3380,6 +3467,7 @@ async function boqPrice() {
       'Finishes (B codes) are supply and install per unit. Furniture (F codes) is the retail price per item. Paint lines are per litre of material plus labour.',
       'Do not count the walls twice: if the wall finish (B03) is paint, give B03 the rate 0 because B04 and B05 cover it; if it is wallpaper, panelling, plaster or stone, price B03 per m² and give B04 and B05 the rate 0.',
       'Then suggest 3 value engineering ideas that keep the look but cost less, each with the code it affects and the approximate total saving in ' + cur + ' for the quantities given.',
+      uiArabic() ? 'Write each idea in Arabic.' : '',
       'Lines: ' + JSON.stringify(lines.map(function (l) { return { code: l.code, item: l.item + (l.note ? ' (' + l.note + ')' : ''), unit: l.unit, qty: l.qty }; })),
       'Reply with JSON only: {"rates":{"B01":0},"ve":[{"code":"B01","idea":"","saving":0}]}'
     ].join('\n') }], 0.2);
@@ -3596,7 +3684,7 @@ function planSvg(S) {
   var Y = function (y) { return -y; };
   var stroke = { 'A-WALL': 22, 'A-DOOR': 12, 'A-GLAZ': 10, 'A-FURN': 12, 'A-FURN-RUG': 10, 'A-LITE': 12, 'A-ANNO-DIMS': 8 };
   var color = { 'A-WALL': '#24211D', 'A-DOOR': '#B5651D', 'A-GLAZ': '#2C7DA0', 'A-FURN': '#6B645B', 'A-FURN-RUG': '#9C948A', 'A-LITE': '#C9A227', 'A-ANNO-DIMS': '#7A1E2C', 'A-ANNO-TEXT': '#24211D' };
-  var out = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + [x0, y0, w, h].join(' ') + '" font-family="DM Sans, Arial, sans-serif"><rect x="' + x0 + '" y="' + y0 + '" width="' + w + '" height="' + h + '" fill="#fff"/>'];
+  var out = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + [x0, y0, w, h].join(' ') + '" font-family="' + (uiArabic() ? 'Tajawal, Tahoma, Arial, sans-serif' : 'DM Sans, Arial, sans-serif') + '"><rect x="' + x0 + '" y="' + y0 + '" width="' + w + '" height="' + h + '" fill="#fff"/>'];
   var st = function (l) { return ' fill="none" stroke="' + color[l] + '" stroke-width="' + (stroke[l] || 10) + '"' + (l === 'A-FURN-RUG' ? ' stroke-dasharray="120 80"' : '') + ' stroke-linecap="round"'; };
   S.forEach(function (s) {
     if (s.k === 'poly' && s.fill) out.push('<polygon points="' + s.pts.map(function (p) { return p[0] + ',' + Y(p[1]); }).join(' ') + '" fill="#B9B1A6"/>');
@@ -3609,7 +3697,7 @@ function planSvg(S) {
       var r = s.r, p0 = [s.c[0] + r * Math.cos(s.a0 * Math.PI / 180), s.c[1] + r * Math.sin(s.a0 * Math.PI / 180)], p1 = [s.c[0] + r * Math.cos(s.a1 * Math.PI / 180), s.c[1] + r * Math.sin(s.a1 * Math.PI / 180)];
       out.push('<path d="M' + p0[0] + ' ' + Y(p0[1]) + ' A' + r + ' ' + r + ' 0 0 0 ' + p1[0] + ' ' + Y(p1[1]) + '"' + st(s.l) + ' stroke-dasharray="40 30"/>');
     } else if (s.k === 'text') {
-      out.push('<text x="' + s.p[0] + '" y="' + Y(s.p[1]) + '" font-size="' + s.h + '" fill="' + color[s.l] + '" text-anchor="' + (s.align === 'left' ? 'start' : 'middle') + '" dominant-baseline="middle"' + (s.rot ? ' transform="rotate(' + (-s.rot) + ' ' + s.p[0] + ' ' + Y(s.p[1]) + ')"' : '') + '>' + escapeHtml(s.s) + '</text>');
+      out.push('<text x="' + s.p[0] + '" y="' + Y(s.p[1]) + '" font-size="' + s.h + '" fill="' + color[s.l] + '" text-anchor="' + (s.align === 'left' ? 'start' : 'middle') + '" dominant-baseline="middle"' + (s.rot ? ' transform="rotate(' + (-s.rot) + ' ' + s.p[0] + ' ' + Y(s.p[1]) + ')"' : '') + '>' + escapeHtml(reelSay(s.s)) + '</text>');
     }
   });
   return out.join('') + '</svg>';

@@ -88,7 +88,7 @@
     '(optional)': '(اختياري)',
     'Sofa': 'كنباية', 'Bed': 'تخت', 'Rug': 'سجادة', 'Coffee table': 'طاولة قهوة', 'Dining table': 'طاولة سفرة', 'Curtains': 'برادي',
     'Lighting': 'الإضاءة', 'Artwork': 'لوحات', 'Plants': 'نباتات', 'Fireplace': 'مدفأة', 'Wardrobe': 'خزانة', 'Desk': 'مكتب',
-    'Console table': 'طاولة كونسول', 'Sideboard': 'بوفيه', 'TV unit': 'وحدة تلفزيون', 'Bookshelf': 'رف كتب', 'Armchair': 'كرسي', 'Cabinets': 'خزائن',
+    'Console table': 'طاولة كونسول', 'Plant': 'نبتة', 'Lamp': 'أباجورة', 'Floor lamp': 'أباجورة أرضية', 'Table lamp': 'أباجورة طاولة', 'Side table': 'طاولة جانبية', 'Ottoman': 'بوف', 'Bench': 'بنش', 'Decor': 'ديكور', 'Pouf': 'بوف', 'Chair': 'كرسي', 'Stool': 'كرسي عالي', 'Kitchen counter': 'كاونتر المطبخ', 'Island': 'جزيرة المطبخ', 'Tv unit': 'وحدة تلفزيون', 'Nightstand': 'كومودينو', 'Cabinet': 'خزانة', 'Shelf': 'رف', 'Floor cushion': 'مخدة أرضية', 'Majlis seating': 'جلسة عربية', 'Planter': 'حوض نبات', 'Sideboard': 'بوفيه', 'TV unit': 'وحدة تلفزيون', 'Bookshelf': 'رف كتب', 'Armchair': 'كرسي', 'Cabinets': 'خزائن',
     'More options': 'خيارات أكتر',
     'Daylight': 'ضو النهار',
     'Golden hour': 'وقت الغروب',
@@ -335,6 +335,9 @@
     'Ramadan & Eid looks': 'زينة رمضان والعيد',
     'AI estimate from the design. Verify all dimensions on site.': 'تقدير بالذكاء الاصطناعي. تأكد من كل القياسات بالموقع.',
     'Say your name': 'احكِ اسمك',
+    'Redesigning...': 'عم نصمّم من جديد...',
+    '3D model': 'موديل 3D',
+    'Redesign your room in 20 seconds': 'صمّم غرفتك من جديد بـ 20 ثانية',
     'Built by Group 36, Outskill AI Accelerator': 'من تطوير Group 36، Outskill AI Accelerator',
     'Language': 'اللغة'
   };
@@ -358,7 +361,7 @@
     [/^OPENING (\d+)$/, 'فتحة $1'],
     [/^W (\d+)$/, 'شباك $1'],
     [/^D (\d+)$/, 'باب $1'],
-    [/^([\d.]+) m² {1,2}· {1,2}ceiling (\d+)$/, '$1 م² · السقف $2'],
+    [/^([\d.]+) m² {1,2}· {1,2}ceiling (\d+)$/, 'المساحة $1 م² · السقف $2'],
     [/^(\d+) of (\d+) styles ready\.\.\.$/, '$1 من $2 ستايلات جاهزة...'],
     [/^Staging (\d+) styles\.\.\.$/, 'عم نفرّش بـ $1 ستايلات...'],
     [new RegExp('^Staging in ' + STYLE_RE + '\\.\\.\\.$'), function (m, s) { return 'عم نفرّش بستايل ' + styleAr(s) + '...'; }],
