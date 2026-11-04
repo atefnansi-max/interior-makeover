@@ -3167,8 +3167,9 @@ async function drawBoard(d) {
   boardText(g, W.pieces, M, py, iw, '700 26px ' + F.body, ink, 30, 1); py += 44;
   pieces.forEach(function (p, i) {
     if (px + ps > M + iw) return;
-    if (!boardCrop(g, img, p.box, px, py, ps)) { g.fillStyle = '#E7DED2'; g.beginPath(); g.roundRect(px, py, ps, ps, 22); g.fill(); }
-    boardText(g, 'F' + String(i + 1).padStart(2, '0') + '  ' + p.name, px, py + ps + 10, ps, '600 21px ' + F.body, ink, 26, 2);
+    var qx = F.rtl ? 2 * M + iw - px - ps : px;
+    if (!boardCrop(g, img, p.box, qx, py, ps)) { g.fillStyle = '#E7DED2'; g.beginPath(); g.roundRect(qx, py, ps, ps, 22); g.fill(); }
+    boardText(g, 'F' + String(i + 1).padStart(2, '0') + '  ' + p.name, qx, py + ps + 10, ps, '600 21px ' + F.body, ink, 26, 2);
     px += ps + 20;
   });
   // Side column: palette, materials, lighting
@@ -3176,7 +3177,7 @@ async function drawBoard(d) {
   boardText(g, W.palette, rx, y, rw, '700 26px ' + F.body, ink, 30, 1); y += 44;
   var pal = (d.palette || []).slice(0, 5), sw = (rw - 4 * 14) / 5;
   pal.forEach(function (c, i) {
-    var sx = rx + i * (sw + 14);
+    var sx = F.rtl ? rx + rw - sw - i * (sw + 14) : rx + i * (sw + 14);
     g.fillStyle = boardHex(c.hex); g.beginPath(); g.roundRect(sx, y, sw, 170, 18); g.fill();
     g.strokeStyle = 'rgba(36,33,29,.12)'; g.lineWidth = 2; g.stroke();
     boardText(g, c.name, sx, y + 182, sw, '600 21px ' + F.body, ink, 25, 2);
@@ -3186,7 +3187,7 @@ async function drawBoard(d) {
   boardText(g, W.materials, rx, y, rw, '700 26px ' + F.body, ink, 30, 1); y += 44;
   var mats = (d.materials || []).slice(0, 6), ms = (rw - 2 * 24) / 3;
   mats.forEach(function (m, i) {
-    var mx = rx + (i % 3) * (ms + 24), my = y + Math.floor(i / 3) * (ms + 96);
+    var mx = F.rtl ? rx + rw - ms - (i % 3) * (ms + 24) : rx + (i % 3) * (ms + 24), my = y + Math.floor(i / 3) * (ms + 96);
     if (!boardCrop(g, img, m.box, mx, my, ms)) { g.fillStyle = '#E7DED2'; g.beginPath(); g.roundRect(mx, my, ms, ms, 22); g.fill(); }
     var ny = boardText(g, 'M' + String(i + 1).padStart(2, '0') + '  ' + m.name, mx, my + ms + 10, ms, '600 21px ' + F.body, ink, 25, 2);
     boardText(g, m.finish, mx, ny + 2, ms, '400 19px ' + F.body, muted, 23, 1);
