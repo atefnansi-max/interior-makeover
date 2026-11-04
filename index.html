@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/v4-shims.min.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=Tajawal:wght@400;500;700&family=Noto+Kufi+Arabic:wght@500;600&display=swap">
 <style>
 :root {
   --ground: #FCF7F0;
@@ -59,6 +59,16 @@ footer .logo img { width: 32px; height: 32px; border-radius: 10px; }
 nav { display: flex; align-items: center; gap: 28px; }
 nav a.nl { display: none; font-size: 15px; font-weight: 500; text-decoration: none; padding: 12px 0; }
 nav .btn { min-height: 44px; padding: 0 20px; font-size: 15px; }
+.lang-switch { flex: 0 0 auto; min-width: 44px; height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--ink); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+.lang-switch:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+/* Arabic: Tajawal for text, Noto Kufi Arabic for the display headings; the Latin brand keeps its own font */
+[dir="rtl"] body { font-family: 'Tajawal', 'DM Sans', system-ui, sans-serif; }
+[dir="rtl"] .serif { font-family: 'Noto Kufi Arabic', var(--serif); font-weight: 600; letter-spacing: 0; line-height: 1.35; }
+[dir="rtl"] .logo, [dir="rtl"] .logo * { font-family: var(--serif); }
+/* In Arabic the after picture is on the left, so its buttons go with it */
+[dir="rtl"] .rail { right: auto; left: 12px; }
+/* Arrows point the way the page reads */
+[dir="rtl"] .btn svg, [dir="rtl"] .fa-arrow-right, [dir="rtl"] .fa-arrow-up-right-from-square { transform: scaleX(-1); }
 
 /* Hero */
 .hero { display: flex; flex-wrap: wrap; align-items: center; gap: 40px; padding-top: 40px; padding-bottom: 56px; }
@@ -594,6 +604,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
     <a class="logo" href="#"><img src="assets/logo-mark.png" alt="" width="40" height="40"><span>Make<em>overly</em></span></a>
     <nav>
       <a class="nl" href="#how">How it works</a>
+      <button type="button" class="lang-switch" id="langSwitch" lang="ar">ع</button>
       <a class="nl" href="#gallery">My designs</a>
       <button type="button" class="token-pill" id="tokenPill" hidden aria-label="Your tokens"><i class="fa-solid fa-coins" aria-hidden="true"></i><span id="tokenCount"></span></button>
       <span class="sr" id="tokenLive" role="status" aria-live="polite"></span>
@@ -1180,6 +1191,7 @@ footer .logo { font-size: 24px; color: var(--ink); }
   </div>
 </footer>
 
+<script src="assets/i18n.js"></script>
 <script>
 var IMG = function (id, w) { return 'https://images.unsplash.com/photo-' + id + '?w=' + (w || 400) + '&q=65'; };
 // Space-planning brief per room type, with standard residential clearances
@@ -4493,6 +4505,7 @@ setInterval(function () {
 
 refresh();
 loadMe().then(loadGallery);
+initMakeoverLang();
 </script>
 </body>
 </html>
